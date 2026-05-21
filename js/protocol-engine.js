@@ -153,7 +153,9 @@ export function buildProtocolWithRules({
         body: minimalNext,
       },
     ],
-    prompt: `我现在要${handoff ? "休息 20 分钟" : "执行一次 3 分钟 Reset"}。请你接手下面这个任务，只做最小下一步。\n\n当前任务：\n${task}\n\n当前状态：\n我现在处于「${state.label}」状态，想继续硬扛的冲动是 ${hardCarryScore}/10，清晰度是 ${clarityScore}/10。${taskInsight ? "诊断补充：" + taskInsight : ""}继续扩大范围会降低交付质量。\n\n你的边界：\n1. 只处理最小下一步，不要重构，不要扩展范围。\n2. 优先复现问题、定位入口、列出 3 个可能原因。\n3. 如果需要改代码，只给出 1 个最小修复建议。\n4. 不要改动无关文件。\n5. 输出下一步可以验证的命令或检查点。`,
+    prompt: handoff
+      ? `【目标】\n在我休息期间，接手并完成以下任务的最小下一步：${task}\n\n【验证方式】\n完成后应能明确回答：\n1. 问题能否复现？复现步骤是什么？\n2. 最可能的 3 个原因是什么？\n3. 最小修复建议是什么（只改一处）？\n\n【约束】\n- 不要重构，不要扩展范围\n- 不要改动无关文件\n- 优先复现和定位，不急着改代码\n- 输出下一步可以验证的命令或检查点\n\n【上下文】\n- 我的状态：${state.label}\n- 硬扛冲动：${hardCarryScore}/10\n- 清晰度：${clarityScore}/10\n${taskInsight ? "- 诊断补充：" + taskInsight + "\n" : ""}- 继续硬扛会降低交付质量，请帮我守住最小边界。`
+      : `【目标】\n执行 3 分钟 Reset 后，完成最小下一步：${task}\n\n【验证方式】\n1. 身体恢复：做 3 次慢呼吸，肩膀是否比刚才放松？\n2. 任务简化：能否用一句话说清当前问题的核心？\n3. 行动验证：${minimalNext}\n\n【约束】\n- 不新增功能\n- 不追求完美方案\n- 只验证一个最小假设\n\n【当前状态】\n${state.label} | 硬扛冲动 ${hardCarryScore}/10 | 清晰度 ${clarityScore}/10\n${taskInsight ? "诊断：" + taskInsight : ""}`,
   };
 }
 
