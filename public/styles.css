@@ -407,6 +407,36 @@ input[type="range"] {
   line-height: 1.65;
 }
 
+.protocol-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.protocol-meta .eyebrow {
+  margin-bottom: 0;
+}
+
+.source-badge {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.source-badge.is-llm {
+  border-color: #b8d6d2;
+  background: #edf8f6;
+  color: var(--accent-strong);
+}
+
 .timer {
   display: grid;
   justify-items: center;

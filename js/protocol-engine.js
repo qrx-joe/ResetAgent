@@ -2,34 +2,21 @@
  * Protocol Engine
  * 负责生成 Reset 协议。
  *
- * 支持两种模式：
- * 1. 规则引擎（本地 fallback，零依赖）
- * 2. API 调用（预留接口，需配置端点和密钥）
- *
- * 默认使用规则引擎。如需接入真实 LLM：
- *   CONFIG.ENABLE_API = true
- *   CONFIG.API_ENDPOINT = 'https://your-api.com/v1/chat/completions'
- *   CONFIG.API_KEY = 'your-key'
+ * 双模式：
+ * 1. 后端 API 模式（优先）：调用 /api/reset，密钥藏在服务端
+ * 2. 规则引擎（fallback）：本地零依赖，无网络或后端不可用时兜底
  */
 
 // ============ 配置 ============
 export const CONFIG = {
-  API_ENDPOINT: localStorage.getItem("reset-agent-api-endpoint") || "",
-  API_KEY: localStorage.getItem("reset-agent-api-key") || "",
-  ENABLE_API: false,
+  API_ENDPOINT: "/api/reset",
+  ENABLE_API: true,
   FALLBACK_ENABLED: true,
-  MODEL: "qwen-turbo",
-  TIMEOUT_MS: 8000,
+  TIMEOUT_MS: 12000,
 };
 
 export function updateConfig(updates) {
   Object.assign(CONFIG, updates);
-  if (updates.API_ENDPOINT !== undefined) {
-    localStorage.setItem("reset-agent-api-endpoint", updates.API_ENDPOINT);
-  }
-  if (updates.API_KEY !== undefined) {
-    localStorage.setItem("reset-agent-api-key", updates.API_KEY);
-  }
 }
 
 // ============ 规则引擎数据 ============
@@ -60,7 +47,8 @@ const stateMap = {
   sleepy: {
     label: "困倦",
     decision: "休息，并把任务交给 Agent",
-    cause: "困倦时继续推进会显著增加低级错误，最健康的下一步是降低人工负荷。",
+    cause:
+      "困倦时继续推进会显著增加低级错误，最健康的下一步是降低人工负荷。",
     body: "设置 20 分钟休息，离开屏幕。不要在床上继续看代码。",
     next: "把当前任务、边界和期望输出交给 Agent，让它先做复现或排查。",
   },
@@ -74,7 +62,7 @@ const stateMap = {
   },
 };
 
-// ============ 启发式分析：让 task 内容影响诊断 ============
+// ============ 启发式分析 ============
 function analyzeTask(task, mood) {
   const t = task.toLowerCase();
   const insights = [];
@@ -83,7 +71,7 @@ function analyzeTask(task, mood) {
     insights.push("任务描述较长，建议先把它压缩成一句话的核心问题。");
   }
 
-  if (/bug|报错|错误|exception|error|crash|fail|崩|broken|not working|hangs|frozen|broken|issue|problem|doesn't work|isn't working/.test(t)) {
+  if (/bug|报错|错误|exception|error|crash|fail|崩|broken|not working|hangs|frozen|issue|problem/.test(t)) {
     if (mood === "tired") {
       insights.push("疲劳时调试容易越改越乱，建议先恢复再定位。");
     } else if (mood === "stuck") {
@@ -91,11 +79,11 @@ function analyzeTask(task, mood) {
     }
   }
 
-  if (/不知道|不清楚|迷茫|无从下手|不知道从哪里|怎么开始|don't know|no idea|how to start|where to start|confused|lost|stuck/.test(t)) {
+  if (/不知道|不清楚|迷茫|无从下手|不知道从哪里|怎么开始|don't know|no idea|how to start|where to start|confused/.test(t)) {
     insights.push("你对任务缺乏清晰起点，这说明需要先做任务降级。");
   }
 
-  if (/小时|hour|deadline|截止|来不及|时间不够|running out of time|out of time|no time/.test(t)) {
+  if (/小时|hour|deadline|截止|来不及|时间不够|running out of time|out of time/.test(t)) {
     insights.push("时间压力正在放大当前状态，先停下来反而能缩短总耗时。");
   }
 
@@ -103,7 +91,7 @@ function analyzeTask(task, mood) {
     insights.push("Demo 焦虑是黑客松常态，把展示目标砍到只剩一个核心故事。");
   }
 
-  if (/重构|重写|优化|改进|升级|better|refactor|rewrite|rebuild|improve|optimize|upgrade|enhance/.test(t)) {
+  if (/重构|重写|优化|改进|升级|better|refactor|rewrite|rebuild|improve|optimize/.test(t)) {
     if (mood !== "sleepy") {
       insights.push("你现在想做的事情可能是'锦上添花'，不是'最小下一步'。");
     }
@@ -146,6 +134,7 @@ export function buildProtocolWithRules({
     : state.cause;
 
   return {
+    source: "rules",
     mood,
     moodLabel: state.label,
     task,
@@ -168,39 +157,13 @@ export function buildProtocolWithRules({
   };
 }
 
-// ============ API 层（预留） ============
-function buildSystemPrompt({ mood, task, hardCarryScore, clarityScore }) {
-  const state = stateMap[mood];
-  return `你是一个开发者状态恢复助手，专门帮助开发者在疲劳、焦虑、卡住或困倦时快速恢复并找到最小下一步。
-
-开发者当前状态：
-- 状态类型：${state.label}
-- 当前任务：${task}
-- 想继续硬扛的冲动：${hardCarryScore}/10
-- 当前清晰度：${clarityScore}/10
-
-请生成一个 JSON 对象，包含以下字段：
-- decision: 建议动作（15字以内）
-- reason: 为什么卡住的分析（1-2句话）
-- body: 30秒身体恢复指令（具体、可执行）
-- next: 最小下一步行动（可在5分钟内完成）
-- savedMinutes: 预估避免的无效时间（数字，15-45之间）`;
-}
-
+// ============ 后端 API 调用 ============
 export async function buildProtocolWithAPI({
   mood,
   task,
   hardCarryScore,
   clarityScore,
 }) {
-  if (!CONFIG.API_ENDPOINT) {
-    throw new Error("CONFIG_ERROR: API 端点未配置。请在控制台运行：\n" +
-      `updateConfig({ API_ENDPOINT: 'https://your-api.com/v1/chat/completions' })`);
-  }
-  if (!CONFIG.API_KEY) {
-    throw new Error("CONFIG_ERROR: API 密钥未配置");
-  }
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
 
@@ -210,76 +173,25 @@ export async function buildProtocolWithAPI({
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${CONFIG.API_KEY}`,
       },
       body: JSON.stringify({
-        model: CONFIG.MODEL,
-        messages: [
-          {
-            role: "system",
-            content: buildSystemPrompt({ mood, task, hardCarryScore, clarityScore }),
-          },
-          {
-            role: "user",
-            content: "请生成 Reset 协议。",
-          },
-        ],
-        response_format: { type: "json_object" },
+        mood,
+        task,
+        hardCarryScore,
+        clarityScore,
       }),
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`API_ERROR: ${response.status} ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorMsg = errorData.error || `HTTP ${response.status}`;
+      throw new Error(`API_ERROR: ${errorMsg}`);
     }
 
-    const data = await response.json();
-    const raw = data.choices?.[0]?.message?.content;
-    if (!raw) {
-      throw new Error("API_ERROR: API 返回内容为空");
-    }
-
-    const content = JSON.parse(raw);
-    const handoff = isHandoffRecommended(mood, hardCarryScore, clarityScore);
-    const state = stateMap[mood];
-
-    return {
-      mood,
-      moodLabel: state.label,
-      task,
-      hardCarryScore,
-      clarityScore,
-      handoff,
-      decision: handoff
-        ? "休息，并把最小任务交给 Agent"
-        : content.decision || state.decision,
-      reason: content.reason || state.cause,
-      savedMinutes:
-        typeof content.savedMinutes === "number"
-          ? content.savedMinutes
-          : getSavedMinutes(mood, hardCarryScore),
-      minimalNext: handoff
-        ? "复制交接 Prompt，让 Agent 只做复现、定位或列出最小修复建议。"
-        : content.next || state.next,
-      steps: [
-        {
-          title: "身体恢复",
-          body: content.body || state.body,
-        },
-        {
-          title: "任务诊断",
-          body: content.reason || state.cause,
-        },
-        {
-          title: handoff ? "Agent 接管" : "最小下一步",
-          body: handoff
-            ? "复制交接 Prompt，让 Agent 只做复现、定位或列出最小修复建议。"
-            : content.next || state.next,
-        },
-      ],
-      prompt: `我现在要${handoff ? "休息 20 分钟" : "执行一次 3 分钟 Reset"}。请你接手下面这个任务，只做最小下一步。\n\n当前任务：\n${task}\n\n当前状态：\n我现在处于「${state.label}」状态，想继续硬扛的冲动是 ${hardCarryScore}/10，清晰度是 ${clarityScore}/10。继续扩大范围会降低交付质量。\n\n你的边界：\n1. 只处理最小下一步，不要重构，不要扩展范围。\n2. 优先复现问题、定位入口、列出 3 个可能原因。\n3. 如果需要改代码，只给出 1 个最小修复建议。\n4. 不要改动无关文件。\n5. 输出下一步可以验证的命令或检查点。`,
-    };
+    const protocol = await response.json();
+    return { ...protocol, source: protocol.source || "llm" };
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
@@ -288,11 +200,11 @@ export async function buildProtocolWithAPI({
 
 // ============ 统一入口 ============
 export async function buildProtocol(data) {
-  if (CONFIG.ENABLE_API && CONFIG.API_ENDPOINT) {
+  if (CONFIG.ENABLE_API) {
     try {
       return await buildProtocolWithAPI(data);
     } catch (err) {
-      console.warn("[ProtocolEngine] API 调用失败，回退到规则引擎:", err);
+      console.warn("[ProtocolEngine] 后端 API 调用失败，回退到规则引擎:", err);
       if (CONFIG.FALLBACK_ENABLED) {
         return buildProtocolWithRules(data);
       }

@@ -7,7 +7,7 @@
 - **Developer Reset Protocol**：状态选择 → 任务诊断 → 恢复引导 → 任务重启 → 前后验证。
 - **Agent Handoff**：状态过差时生成可复制给 Codex / Cursor / Claude Code 的任务交接 Prompt。
 - **任务感知诊断**：规则引擎会分析你输入的任务内容（关键词、长度、上下文），给出更精准的诊断，而不是千人一面的模板。
-- **API 预留层**：已封装好 LLM 调用接口，填入端点和密钥即可从规则引擎升级到真实模型，无需重构代码。
+- **服务端 LLM 代理**：Next.js API route 调用通义千问 / DeepSeek，密钥不暴露到浏览器。
 - **零后端 MVP**：纯静态页面即可运行，核心数据保存在浏览器本地。
 
 ## 技术架构
@@ -39,34 +39,28 @@
 `js/protocol-engine.js` 提供两种协议生成方式：
 
 1. **规则引擎（默认）**：零依赖、零延迟，根据状态类型 + 任务内容启发式分析生成协议。
-2. **API 模式（预留）**：配置 `API_ENDPOINT` 和 `API_KEY` 后启用，自动 fallback 到规则引擎。
+2. **API 模式**：浏览器请求 `/api/reset`，由 Next.js 服务端代理调用真实模型，失败时自动 fallback 到规则引擎。
 
-在浏览器控制台即可切换：
+当前 `public/js/protocol-engine.js` 默认优先请求 `/api/reset`。本地运行 Next 服务后即可使用：
 
-```javascript
-import { updateConfig } from './js/protocol-engine.js';
-updateConfig({
-  ENABLE_API: true,
-  API_ENDPOINT: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-  API_KEY: '仅限本地调试，不要提交真实密钥',
-  MODEL: 'qwen-turbo'
-});
+```bash
+npm run dev
 ```
 
 环境变量和密钥说明见 [docs/ENV.md](./docs/ENV.md)。当前静态 MVP 默认不需要 `.env`。
 
 ## 本地运行
 
-推荐使用本地服务器（ES Module 在 `file://` 协议下可能受限）：
+推荐使用 Next.js 本地服务，这样 `/api/reset` 才能调用大模型：
 
 ```bash
-node serve.js
+npm run dev
 ```
 
 然后访问：
 
 ```text
-http://localhost:4173
+http://localhost:3000
 ```
 
 一键 Demo：

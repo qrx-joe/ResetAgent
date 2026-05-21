@@ -14,6 +14,7 @@ const DOM = {
   afterClarityValue: $("#afterClarityValue"),
   decisionTitle: $("#decisionTitle"),
   decisionReason: $("#decisionReason"),
+  sourceBadge: $("#sourceBadge"),
   protocolList: $("#protocolList"),
   handoffPrompt: $("#handoffPrompt"),
   copyPrompt: $("#copyPrompt"),
@@ -157,6 +158,11 @@ function renderProtocol(protocol) {
   DOM.decisionTitle.textContent = protocol.decision;
   DOM.decisionReason.textContent = protocol.reason;
   DOM.handoffPrompt.value = protocol.prompt;
+  if (DOM.sourceBadge) {
+    const isLlm = protocol.source === "llm";
+    DOM.sourceBadge.textContent = isLlm ? "LLM" : "Fallback";
+    DOM.sourceBadge.classList.toggle("is-llm", isLlm);
+  }
 
   DOM.protocolList.innerHTML = protocol.steps
     .map(

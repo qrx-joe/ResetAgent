@@ -28,7 +28,31 @@ PORT=4173
 - README 示例
 - 浏览器 localStorage
 
-如果要正式接入通义千问 / OpenAI，建议新增一个服务端代理，把密钥放在服务端环境变量里：
+当前项目已经使用 Next.js API route 作为服务端代理：
+
+```text
+/api/reset
+```
+
+浏览器请求 `/api/reset`，由服务端读取环境变量并调用真实模型。不要在浏览器端保存真实密钥。
+
+## 通义千问 / DashScope
+
+```env
+QWEN_API_KEY=your_real_key_here
+QWEN_API_ENDPOINT=https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+QWEN_MODEL=qwen-turbo
+```
+
+## DeepSeek
+
+```env
+DEEPSEEK_API_KEY=your_real_key_here
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-chat
+```
+
+## 通用变量（预留）
 
 ```env
 RESET_AGENT_ENABLE_API=true
@@ -37,14 +61,6 @@ RESET_AGENT_API_KEY=your_real_key_here
 RESET_AGENT_MODEL=qwen-turbo
 RESET_AGENT_TIMEOUT_MS=8000
 ```
-
-浏览器只请求你自己的代理接口，例如：
-
-```text
-/api/generate-protocol
-```
-
-由服务端代理负责调用真实模型。这样 GitHub repo 和前端页面都不会暴露密钥。
 
 ## 文件说明
 

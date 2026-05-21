@@ -54,6 +54,27 @@ function isHandoffRecommended(
   return mood === "sleepy" || hardCarryScore >= 8 || clarityScore <= 3;
 }
 
+function normalizeChatEndpoint(endpoint: string) {
+  const trimmed = endpoint.replace(/\/+$/, "");
+  if (trimmed.endsWith("/chat/completions")) return trimmed;
+  if (trimmed.endsWith("/v1")) return `${trimmed}/chat/completions`;
+  if (trimmed.endsWith("/compatible-mode/v1")) {
+    return `${trimmed}/chat/completions`;
+  }
+  return `${trimmed}/v1/chat/completions`;
+}
+
+function parseJsonContent(raw: string) {
+  const cleaned = raw
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  return JSON.parse(cleaned);
+}
+
 function buildSystemPrompt({
   mood,
   task,
@@ -94,11 +115,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.QWEN_API_KEY;
+    if (!stateMap[mood]) {
+      return NextResponse.json(
+        { error: "无效状态类型" },
+        { status: 400 }
+      );
+    }
+
+    const apiKey = process.env.QWEN_API_KEY || process.env.DEEPSEEK_API_KEY;
     const apiEndpoint =
       process.env.QWEN_API_ENDPOINT ||
+      process.env.DEEPSEEK_API_ENDPOINT ||
+      (process.env.DEEPSEEK_BASE_URL
+        ? normalizeChatEndpoint(process.env.DEEPSEEK_BASE_URL)
+        : "") ||
       "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
-    const model = process.env.QWEN_MODEL || "qwen-turbo";
+    const model =
+      process.env.QWEN_MODEL ||
+      process.env.DEEPSEEK_MODEL ||
+      (process.env.DEEPSEEK_API_KEY ? "deepseek-chat" : "qwen-turbo");
 
     if (!apiKey) {
       return NextResponse.json(
@@ -158,7 +193,7 @@ export async function POST(request: NextRequest) {
 
     let content: Record<string, unknown>;
     try {
-      content = JSON.parse(raw);
+      content = parseJsonContent(raw);
     } catch {
       return NextResponse.json(
         { error: "LLM 返回格式无效", raw },
@@ -170,6 +205,8 @@ export async function POST(request: NextRequest) {
     const handoff = isHandoffRecommended(mood, hardCarryScore, clarityScore);
 
     const protocol = {
+      source: "llm",
+      provider: process.env.DEEPSEEK_API_KEY ? "deepseek" : "qwen",
       mood,
       moodLabel: state.label,
       task,

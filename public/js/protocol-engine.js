@@ -71,7 +71,7 @@ function analyzeTask(task, mood) {
     insights.push("任务描述较长，建议先把它压缩成一句话的核心问题。");
   }
 
-  if (/bug|报错|错误|exception|error|crash|fail|崩/.test(t)) {
+  if (/bug|报错|错误|exception|error|crash|fail|崩|broken|not working|hangs|frozen|issue|problem/.test(t)) {
     if (mood === "tired") {
       insights.push("疲劳时调试容易越改越乱，建议先恢复再定位。");
     } else if (mood === "stuck") {
@@ -79,11 +79,11 @@ function analyzeTask(task, mood) {
     }
   }
 
-  if (/不知道|不清楚|迷茫|无从下手|不知道从哪里|怎么开始/.test(t)) {
+  if (/不知道|不清楚|迷茫|无从下手|不知道从哪里|怎么开始|don't know|no idea|how to start|where to start|confused/.test(t)) {
     insights.push("你对任务缺乏清晰起点，这说明需要先做任务降级。");
   }
 
-  if (/小时|hour|deadline|截止|来不及|时间不够/.test(t)) {
+  if (/小时|hour|deadline|截止|来不及|时间不够|running out of time|out of time/.test(t)) {
     insights.push("时间压力正在放大当前状态，先停下来反而能缩短总耗时。");
   }
 
@@ -91,7 +91,7 @@ function analyzeTask(task, mood) {
     insights.push("Demo 焦虑是黑客松常态，把展示目标砍到只剩一个核心故事。");
   }
 
-  if (/重构|重写|优化|改进|升级|better/.test(t)) {
+  if (/重构|重写|优化|改进|升级|better|refactor|rewrite|rebuild|improve|optimize/.test(t)) {
     if (mood !== "sleepy") {
       insights.push("你现在想做的事情可能是'锦上添花'，不是'最小下一步'。");
     }
@@ -134,6 +134,7 @@ export function buildProtocolWithRules({
     : state.cause;
 
   return {
+    source: "rules",
     mood,
     moodLabel: state.label,
     task,
@@ -189,7 +190,8 @@ export async function buildProtocolWithAPI({
       throw new Error(`API_ERROR: ${errorMsg}`);
     }
 
-    return await response.json();
+    const protocol = await response.json();
+    return { ...protocol, source: protocol.source || "llm" };
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
