@@ -27,3 +27,5 @@ server.err
 # Cache
 .uv-cache/
 *.tmp
+
+.vercel

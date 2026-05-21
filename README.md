@@ -69,6 +69,11 @@ http://localhost:3000
 http://localhost:4173/?demo=1
 ```
 
+## 线上 Demo
+
+- Demo: https://reset-agent-green.vercel.app
+- 一键 Demo: https://reset-agent-green.vercel.app/index.html?demo=1
+
 ## 截图
 
 ![Desktop Demo](./assets/desktop.png)
@@ -87,6 +92,6 @@ http://localhost:4173/?demo=1
 
 - [x] 规则引擎任务感知分析（已实现）
 - [x] API 预留层 + fallback 机制（已实现）
-- [ ] 接入通义千问 / OpenAI 真实模型（需配置密钥）
-- [ ] Vercel 部署，把 Demo 链接换成线上地址
+- [x] 接入 DeepSeek 真实模型（服务端代理 + fallback）
+- [x] Vercel 部署，把 Demo 链接换成线上地址
 - [ ] 真实健康数据输入，例如 Apple Watch / Oura / WHOOP 的恢复状态

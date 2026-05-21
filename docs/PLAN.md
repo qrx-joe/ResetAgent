@@ -140,7 +140,7 @@ Reset Agent 是一个面向开发者的轻量状态恢复工具。它不告诉�
 ## 七、提交物清单
 
 ### 1. 可运行的网站
-- 线上地址：`https://reset-agent.vercel.app`
+- 线上地址：`https://reset-agent-green.vercel.app`
 - 要求：手机+电脑均可访问，核心流程完整
 
 ### 2. 项目海报
