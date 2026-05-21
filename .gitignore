@@ -1,0 +1,7 @@
+.uv-cache/
+node_modules/
+server.log
+server.err
+.DS_Store
+*.log
+*.tmp
