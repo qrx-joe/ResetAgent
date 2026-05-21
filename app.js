@@ -119,7 +119,7 @@ const Loading = {
     const el = this._indicator;
     if (el) el.classList.remove("is-visible");
     DOM.submitBtn.disabled = false;
-    DOM.submitBtn.textContent = "生成 Reset 协议";
+    DOM.submitBtn.textContent = "生成协议";
   },
 };
 

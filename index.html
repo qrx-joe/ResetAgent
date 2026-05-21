@@ -17,43 +17,39 @@
           <span class="brand-mark" aria-hidden="true">R</span>
           <span>
             <strong>Reset Agent</strong>
-            <small>Developer Reset Protocol</small>
+            <small>3-minute developer reset</small>
           </span>
         </a>
         <nav class="top-actions" aria-label="提交物导航">
-          <a href="./poster.html" target="_blank" rel="noreferrer">项目海报</a>
+          <a href="./poster.html" target="_blank" rel="noreferrer">海报</a>
           <a href="./PLAN.md" target="_blank" rel="noreferrer">Plan</a>
         </nav>
       </header>
 
-      <section class="status-band" aria-label="核心定位">
+      <section class="product-intro" aria-label="产品说明">
         <div>
-          <p class="eyebrow">3 分钟恢复协议</p>
+          <p class="eyebrow">Developer Reset Protocol</p>
           <h1>
-            <span>别再无效硬扛。</span>
-            <span>判断下一步：</span>
-            <span>继续、休息，</span>
+            <span>判断继续、休息，</span>
             <span>还是交给 Agent。</span>
           </h1>
         </div>
-        <div class="protocol-strip" aria-label="Reset Agent 执行链路">
-          <span>识别状态</span>
-          <span>诊断卡点</span>
-          <span>恢复引导</span>
-          <span>任务重启</span>
-          <span>Agent 接管</span>
-        </div>
+        <p>
+          <span>输入当前卡点，</span>
+          <span>生成 3 分钟 Reset 协议</span>
+          <span>和 Agent Handoff。</span>
+        </p>
       </section>
 
-      <section class="workspace" aria-label="Reset Agent 工作台">
-        <form class="panel diagnostic-panel" id="diagnosticForm">
+      <section class="console-grid" aria-label="Reset Agent 控制台">
+        <form class="panel intake-panel" id="diagnosticForm">
           <div class="panel-head">
-            <p class="eyebrow">Step 01</p>
-            <h2>现在发生了什么？</h2>
+            <p class="eyebrow">Intake</p>
+            <h2>当前状态</h2>
           </div>
 
           <fieldset class="state-grid" aria-label="选择当前状态">
-            <legend>选择一个最接近的状态</legend>
+            <legend>选择最接近的状态</legend>
             <label class="state-option">
               <input type="radio" name="mood" value="stuck" checked />
               <span class="state-icon">!</span>
@@ -77,12 +73,12 @@
             <label class="state-option">
               <input type="radio" name="mood" value="pain" />
               <span class="state-icon">+</span>
-              <span>肩颈痛</span>
+              <span>疼痛</span>
             </label>
           </fieldset>
 
           <label class="field">
-            <span>你现在卡在什么任务上？</span>
+            <span>卡住的任务</span>
             <textarea
               id="taskInput"
               rows="5"
@@ -92,39 +88,36 @@
             ></textarea>
           </label>
 
-          <div class="slider-row">
-            <label for="hardCarry">
-              <span>想继续硬扛的冲动</span>
-              <strong><output id="hardCarryValue">7</output>/10</strong>
-            </label>
-            <input id="hardCarry" type="range" min="1" max="10" value="7" />
-          </div>
+          <div class="metric-stack">
+            <div class="slider-row">
+              <label for="hardCarry">
+                <span>硬扛冲动</span>
+                <strong><output id="hardCarryValue">7</output>/10</strong>
+              </label>
+              <input id="hardCarry" type="range" min="1" max="10" value="7" />
+            </div>
 
-          <div class="slider-row">
-            <label for="clarity">
-              <span>现在的清晰度</span>
-              <strong><output id="clarityValue">4</output>/10</strong>
-            </label>
-            <input id="clarity" type="range" min="1" max="10" value="4" />
+            <div class="slider-row">
+              <label for="clarity">
+                <span>清晰度</span>
+                <strong><output id="clarityValue">4</output>/10</strong>
+              </label>
+              <input id="clarity" type="range" min="1" max="10" value="4" />
+            </div>
           </div>
 
           <div class="form-actions">
             <button class="secondary-action" type="button" id="quickDemo">一键 Demo</button>
-            <button class="primary-action" type="submit">生成 Reset 协议</button>
+            <button class="primary-action" type="submit">生成协议</button>
           </div>
         </form>
 
-        <section class="panel result-panel" aria-live="polite">
-          <div class="panel-head">
-            <p class="eyebrow">Step 02</p>
-            <h2>Reset 协议</h2>
-          </div>
-
-          <div class="decision-board" id="decisionBoard">
-            <div class="decision-copy">
-              <span class="decision-label">建议动作</span>
-              <strong id="decisionTitle">先生成你的协议</strong>
-              <p id="decisionReason">输入当前任务和状态后，Reset Agent 会判断你该继续、休息，还是交给 Agent。</p>
+        <section class="panel protocol-panel" aria-live="polite">
+          <div class="protocol-header">
+            <div>
+              <p class="eyebrow">Protocol</p>
+              <h2 id="decisionTitle">先生成你的协议</h2>
+              <p id="decisionReason">Reset Agent 会判断你该继续、休息，还是交给 Agent。</p>
             </div>
             <div class="timer" aria-label="3 分钟倒计时">
               <div class="timer-ring" id="timerRing">
@@ -132,14 +125,14 @@
                 <span>reset</span>
               </div>
               <div class="timer-actions">
-                <button type="button" class="icon-button" id="startTimer" aria-label="开始倒计时" title="开始倒计时">▶</button>
-                <button type="button" class="icon-button" id="pauseTimer" aria-label="暂停倒计时" title="暂停倒计时">Ⅱ</button>
-                <button type="button" class="icon-button" id="resetTimer" aria-label="重置倒计时" title="重置倒计时">↺</button>
+                <button type="button" class="icon-button" id="startTimer" aria-label="开始倒计时" title="开始">▶</button>
+                <button type="button" class="icon-button" id="pauseTimer" aria-label="暂停倒计时" title="暂停">Ⅱ</button>
+                <button type="button" class="icon-button" id="resetTimer" aria-label="重置倒计时" title="重置">↺</button>
               </div>
             </div>
           </div>
 
-          <div class="protocol-list" id="protocolList">
+          <div class="timeline" id="protocolList">
             <article>
               <span>01</span>
               <div>
@@ -164,20 +157,20 @@
           </div>
 
           <section class="handoff-box" aria-label="Agent 接管提示词">
-            <div>
+            <div class="section-title">
               <p class="eyebrow">Agent Handoff</p>
               <h3>给编码 Agent 的交接 Prompt</h3>
             </div>
-            <textarea id="handoffPrompt" readonly rows="9">生成协议后，这里会出现可复制给 Codex / Cursor / Claude Code 的接管提示词。</textarea>
-            <button type="button" class="secondary-action" id="copyPrompt">复制交接 Prompt</button>
+            <textarea id="handoffPrompt" readonly rows="8">生成协议后，这里会出现可复制给 Codex / Cursor / Claude Code 的接管提示词。</textarea>
+            <button type="button" class="secondary-action wide-action" id="copyPrompt">复制 Prompt</button>
           </section>
         </section>
       </section>
 
-      <section class="recovery-band" aria-label="恢复前后验证">
+      <section class="review-grid" aria-label="恢复后验证">
         <div class="panel score-panel">
           <div class="panel-head">
-            <p class="eyebrow">Step 03</p>
+            <p class="eyebrow">Review</p>
             <h2>恢复后验证</h2>
           </div>
           <div class="slider-row">
@@ -187,7 +180,7 @@
             </label>
             <input id="afterClarity" type="range" min="1" max="10" value="6" />
           </div>
-          <button type="button" class="secondary-action" id="saveSession">生成今日状态卡片</button>
+          <button type="button" class="secondary-action" id="saveSession">生成状态卡</button>
         </div>
 
         <article class="reset-card" id="resetCard" aria-label="今日状态卡片">
@@ -199,7 +192,7 @@
               <dd id="cardMood">等待生成</dd>
             </div>
             <div>
-              <dt>清晰度变化</dt>
+              <dt>清晰度</dt>
               <dd id="cardClarity">4 → 6</dd>
             </div>
             <div>
@@ -213,6 +206,6 @@
     </main>
 
     <div class="toast" id="toast" role="status" aria-live="polite">已复制</div>
-    <script type="module" src="./app.js"></script>
+    <script src="./app.js" type="module"></script>
   </body>
 </html>
