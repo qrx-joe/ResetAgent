@@ -29,3 +29,8 @@ server.err
 *.tmp
 
 .vercel
+
+# Screenshot test outputs & scripts
+/*.png
+/screenshot*.js
+/verify*.js
