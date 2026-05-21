@@ -12,6 +12,15 @@
 
 ## 技术架构
 
+> **为什么从 Next.js 切换到原生 HTML/CSS/JS？**
+>
+> 原始计划使用 Next.js 15 + Tailwind + shadcn/ui（见 [docs/PLAN.md](./docs/PLAN.md)）。实际开发中评估后切换为纯原生技术栈，原因：
+> - 项目为单页零后端应用，不需要 Next.js 的 SSR/SSG 能力
+> - 原生 ES Module 直接运行，省去构建配置和打包时间
+> - 自定义 CSS 在此规模下比 Tailwind utility-first 更直观可控
+> - 纯静态文件可直接部署到任何 CDN，无需 Node 运行时
+> - 24 小时黑客松中，减少构建步骤 = 减少故障面和认知负担
+
 ```
 ├── index.html          — 单页应用入口
 ├── app.js              — UI 层（ES Module）
@@ -39,10 +48,12 @@ import { updateConfig } from './js/protocol-engine.js';
 updateConfig({
   ENABLE_API: true,
   API_ENDPOINT: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-  API_KEY: '你的密钥',
+  API_KEY: '仅限本地调试，不要提交真实密钥',
   MODEL: 'qwen-turbo'
 });
 ```
+
+环境变量和密钥说明见 [docs/ENV.md](./docs/ENV.md)。当前静态 MVP 默认不需要 `.env`。
 
 ## 本地运行
 

@@ -83,7 +83,7 @@ function analyzeTask(task, mood) {
     insights.push("任务描述较长，建议先把它压缩成一句话的核心问题。");
   }
 
-  if (/bug|报错|错误|exception|error|crash|fail|崩/.test(t)) {
+  if (/bug|报错|错误|exception|error|crash|fail|崩|broken|not working|hangs|frozen|broken|issue|problem|doesn't work|isn't working/.test(t)) {
     if (mood === "tired") {
       insights.push("疲劳时调试容易越改越乱，建议先恢复再定位。");
     } else if (mood === "stuck") {
@@ -91,11 +91,11 @@ function analyzeTask(task, mood) {
     }
   }
 
-  if (/不知道|不清楚|迷茫|无从下手|不知道从哪里|怎么开始/.test(t)) {
+  if (/不知道|不清楚|迷茫|无从下手|不知道从哪里|怎么开始|don't know|no idea|how to start|where to start|confused|lost|stuck/.test(t)) {
     insights.push("你对任务缺乏清晰起点，这说明需要先做任务降级。");
   }
 
-  if (/小时|hour|deadline|截止|来不及|时间不够/.test(t)) {
+  if (/小时|hour|deadline|截止|来不及|时间不够|running out of time|out of time|no time/.test(t)) {
     insights.push("时间压力正在放大当前状态，先停下来反而能缩短总耗时。");
   }
 
@@ -103,7 +103,7 @@ function analyzeTask(task, mood) {
     insights.push("Demo 焦虑是黑客松常态，把展示目标砍到只剩一个核心故事。");
   }
 
-  if (/重构|重写|优化|改进|升级|better/.test(t)) {
+  if (/重构|重写|优化|改进|升级|better|refactor|rewrite|rebuild|improve|optimize|upgrade|enhance/.test(t)) {
     if (mood !== "sleepy") {
       insights.push("你现在想做的事情可能是'锦上添花'，不是'最小下一步'。");
     }
@@ -194,11 +194,11 @@ export async function buildProtocolWithAPI({
   clarityScore,
 }) {
   if (!CONFIG.API_ENDPOINT) {
-    throw new Error("API 端点未配置。请在控制台运行：\n" +
+    throw new Error("CONFIG_ERROR: API 端点未配置。请在控制台运行：\n" +
       `updateConfig({ API_ENDPOINT: 'https://your-api.com/v1/chat/completions' })`);
   }
   if (!CONFIG.API_KEY) {
-    throw new Error("API 密钥未配置");
+    throw new Error("CONFIG_ERROR: API 密钥未配置");
   }
 
   const controller = new AbortController();
@@ -231,13 +231,13 @@ export async function buildProtocolWithAPI({
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`API 错误: ${response.status} ${response.statusText}`);
+      throw new Error(`API_ERROR: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
     const raw = data.choices?.[0]?.message?.content;
     if (!raw) {
-      throw new Error("API 返回内容为空");
+      throw new Error("API_ERROR: API 返回内容为空");
     }
 
     const content = JSON.parse(raw);

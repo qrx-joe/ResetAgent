@@ -242,7 +242,18 @@ async function handleSubmit(event) {
     Toast.show("Reset 协议已生成");
   } catch (err) {
     console.error("[App] 生成协议失败:", err);
-    Toast.show("生成失败，请重试");
+
+    let message = "生成失败，请重试";
+    const msg = err.message || "";
+    if (msg.startsWith("CONFIG_ERROR")) {
+      message = "API 未配置，已使用本地规则引擎";
+    } else if (msg.startsWith("API_ERROR")) {
+      message = "服务暂时不可用，已使用本地规则引擎";
+    } else if (err.name === "AbortError" || msg.includes("fetch") || msg.includes("network")) {
+      message = "网络不稳定，已使用本地规则引擎";
+    }
+
+    Toast.show(message);
   } finally {
     Loading.hide();
   }

@@ -5,3 +5,6 @@ server.err
 .DS_Store
 *.log
 *.tmp
+.env
+.env.*
+!.env.example
