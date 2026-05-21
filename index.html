@@ -41,11 +41,20 @@
     <section class="screen hidden" id="screen2">
       <div class="timer-display" id="timerDisplay">03:00</div>
       <p class="timer-hint">去喝杯水，远离屏幕</p>
+      <div class="step-guide" id="stepGuide">
+        <div class="step active" data-step="0"><span>01</span> 离开屏幕，慢呼吸 4 次</div>
+        <div class="step" data-step="1"><span>02</span> 把任务压缩成一句话</div>
+        <div class="step" data-step="2"><span>03</span> 开始执行最小下一步</div>
+      </div>
     </section>
 
     <!-- Screen 3: Result -->
     <section class="screen hidden" id="screen3">
       <div class="result-wrap">
+        <div class="stats-bar" id="statsBar">
+          今日已 Reset 0 次 · 累计避免硬扛 0 分钟
+        </div>
+
         <div class="decision-head">
           <p class="eyebrow">Protocol</p>
           <h2 id="decisionTitle">先生成你的协议</h2>
@@ -82,6 +91,23 @@
           <button type="button" class="secondary-action" id="copyPrompt">复制 Prompt</button>
         </div>
 
+        <div class="clarity-check" id="clarityCheck">
+          <p class="eyebrow">Review</p>
+          <p class="check-label">恢复后的清晰度？</p>
+          <div class="rating-bar" id="ratingBar">
+            <button type="button" data-score="1">1</button>
+            <button type="button" data-score="2">2</button>
+            <button type="button" data-score="3">3</button>
+            <button type="button" data-score="4">4</button>
+            <button type="button" data-score="5">5</button>
+            <button type="button" data-score="6">6</button>
+            <button type="button" data-score="7">7</button>
+            <button type="button" data-score="8">8</button>
+            <button type="button" data-score="9">9</button>
+            <button type="button" data-score="10">10</button>
+          </div>
+        </div>
+
         <article class="reset-card" id="resetCard">
           <p class="eyebrow">Good Night, Hackers</p>
           <h2>今日 Reset 卡片</h2>
@@ -91,14 +117,15 @@
               <dd id="cardMood">等待生成</dd>
             </div>
             <div>
+              <dt>清晰度</dt>
+              <dd id="cardClarity">—</dd>
+            </div>
+            <div>
               <dt>避免硬扛</dt>
               <dd id="cardSaved">—</dd>
             </div>
-            <div>
-              <dt>下一步</dt>
-              <dd id="cardNext">最小下一步会在生成协议后出现。</dd>
-            </div>
           </dl>
+          <p id="cardNext">最小下一步会在生成协议后出现。</p>
         </article>
 
         <div class="result-actions">

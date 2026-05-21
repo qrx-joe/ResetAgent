@@ -17,6 +17,7 @@ const DOM = {
   handoffPrompt: $("#handoffPrompt"),
   copyPrompt: $("#copyPrompt"),
   cardMood: $("#cardMood"),
+  cardClarity: $("#cardClarity"),
   cardSaved: $("#cardSaved"),
   cardNext: $("#cardNext"),
   backToStart: $("#backToStart"),
@@ -60,6 +61,15 @@ const Timer = {
 
   update() {
     DOM.timerDisplay.textContent = this.format(this.secondsLeft);
+
+    // Update step guide highlight based on remaining time
+    const steps = document.querySelectorAll(".step");
+    steps.forEach((s) => s.classList.remove("active"));
+    let activeStep = 0;
+    if (this.secondsLeft <= 60) activeStep = 2;
+    else if (this.secondsLeft <= 120) activeStep = 1;
+    const activeEl = document.querySelector(`.step[data-step="${activeStep}"]`);
+    if (activeEl) activeEl.classList.add("active");
   },
 
   start() {
@@ -95,6 +105,26 @@ const Toast = {
   },
 };
 
+// ============ 存储 ============
+const Storage = {
+  KEY: "reset-agent-history",
+  MAX: 50,
+
+  save(session) {
+    const history = this.load();
+    history.unshift(session);
+    localStorage.setItem(this.KEY, JSON.stringify(history.slice(0, this.MAX)));
+  },
+
+  load() {
+    try {
+      return JSON.parse(localStorage.getItem(this.KEY) || "[]");
+    } catch {
+      return [];
+    }
+  },
+};
+
 // ============ 协议渲染 ============
 function renderProtocol(protocol) {
   DOM.decisionTitle.textContent = protocol.decision;
@@ -118,6 +148,57 @@ function renderProtocol(protocol) {
   DOM.cardMood.textContent = protocol.moodLabel;
   DOM.cardSaved.textContent = `约 ${protocol.savedMinutes} 分钟`;
   DOM.cardNext.textContent = protocol.minimalNext;
+  DOM.cardClarity.textContent = "—";
+}
+
+// ============ 累计统计 ============
+function renderStats() {
+  const history = Storage.load();
+  const todayStr = new Date().toDateString();
+  const todaySessions = history.filter((s) => {
+    const d = new Date(s.createdAt);
+    return d.toDateString() === todayStr;
+  });
+  const count = todaySessions.length;
+  const totalSaved = todaySessions.reduce(
+    (sum, s) => sum + (s.savedMinutes || 0),
+    0
+  );
+
+  const statsBar = document.getElementById("statsBar");
+  if (statsBar) {
+    statsBar.textContent = `今日已 Reset ${count} 次 · 累计避免硬扛 ${totalSaved} 分钟`;
+  }
+}
+
+// ============ 清晰度评分 ============
+function saveSessionWithScore(afterScore) {
+  if (!currentProtocol) return;
+
+  const session = {
+    ...currentProtocol,
+    afterScore,
+    createdAt: new Date().toISOString(),
+  };
+
+  Storage.save(session);
+
+  DOM.cardClarity.textContent = `${afterScore}/10`;
+  Toast.show("状态已保存");
+  renderStats();
+}
+
+function bindRatingButtons() {
+  const bar = document.getElementById("ratingBar");
+  if (!bar) return;
+  bar.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const score = Number(btn.dataset.score);
+      saveSessionWithScore(score);
+      bar.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
 }
 
 // ============ 核心：开始 Reset ============
@@ -141,7 +222,15 @@ async function handleStartReset() {
     });
 
     renderProtocol(currentProtocol);
+    renderStats();
     Timer.reset();
+
+    // Reset rating buttons
+    const ratingBar = document.getElementById("ratingBar");
+    if (ratingBar) {
+      ratingBar.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+    }
+
     showScreen(2);
     Timer.start();
   } catch (err) {
@@ -172,17 +261,23 @@ function resetAll() {
   DOM.moodBtns.forEach((b) => b.classList.remove("active"));
   DOM.moodBtns[0].classList.add("active");
   Timer.reset();
+
+  const ratingBar = document.getElementById("ratingBar");
+  if (ratingBar) {
+    ratingBar.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+  }
+
   showScreen(1);
 }
 
 // ============ 事件绑定 ============
 function bindEvents() {
   bindMoodButtons();
+  bindRatingButtons();
   DOM.startReset.addEventListener("click", handleStartReset);
   DOM.copyPrompt.addEventListener("click", copyHandoffPrompt);
   DOM.backToStart.addEventListener("click", resetAll);
 
-  // Enter key in textarea triggers start
   DOM.taskInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();

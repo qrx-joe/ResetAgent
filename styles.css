@@ -156,11 +156,61 @@ button {
   color: #555;
 }
 
+.step-guide {
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #333;
+  font-size: 1rem;
+  transition: color 300ms ease;
+}
+
+.step span {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #111;
+  color: #444;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: background 300ms, color 300ms;
+}
+
+.step.active {
+  color: #fff;
+}
+
+.step.active span {
+  background: #fff;
+  color: #000;
+}
+
 /* Screen 3: Result */
 .result-wrap {
   width: 100%;
   max-width: 720px;
   padding: 48px 0;
+}
+
+.stats-bar {
+  margin-bottom: 28px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  background: #111;
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 .eyebrow {
@@ -249,7 +299,7 @@ button {
 }
 
 .handoff-box {
-  margin-bottom: 36px;
+  margin-bottom: 28px;
 }
 
 .handoff-box .eyebrow {
@@ -287,6 +337,50 @@ button {
 .secondary-action:hover {
   border-color: #555;
   color: #fff;
+}
+
+.clarity-check {
+  margin-bottom: 28px;
+  padding: 20px;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+  background: #0a0a0a;
+}
+
+.check-label {
+  margin: 0 0 14px;
+  color: #aaa;
+  font-size: 1rem;
+}
+
+.rating-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rating-bar button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: transparent;
+  color: #777;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 120ms;
+}
+
+.rating-bar button:hover {
+  border-color: #666;
+  color: #aaa;
+}
+
+.rating-bar button.active {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
 }
 
 .reset-card {
@@ -390,6 +484,20 @@ button {
 
   .mood-btn {
     padding: 6px 14px;
+    font-size: 0.85rem;
+  }
+
+  .step-guide {
+    margin-top: 36px;
+  }
+
+  .step {
+    font-size: 0.92rem;
+  }
+
+  .rating-bar button {
+    width: 32px;
+    height: 32px;
     font-size: 0.85rem;
   }
 }
