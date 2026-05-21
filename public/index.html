@@ -5,145 +5,234 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Reset Agent：开发者的 3 分钟状态恢复协议。"
+      content="Reset Agent：开发者的 3 分钟状态恢复与 Agent 交接协议。"
     />
     <title>Reset Agent</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <!-- Screen 1: Intake -->
-    <section class="screen" id="screen1">
-      <div class="brand">Reset Agent</div>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./index.html" aria-label="Reset Agent 首页">
+          <span class="brand-mark">R</span>
+          <span>
+            <strong>Reset Agent</strong>
+            <small>Developer Reset Protocol</small>
+          </span>
+        </a>
 
-      <div class="intake-form">
-        <h1>你现在感觉怎么样？</h1>
-
-        <div class="mood-grid" id="moodGrid">
-          <button type="button" class="mood-btn" data-mood="stuck">卡住</button>
-          <button type="button" class="mood-btn" data-mood="tired">疲劳</button>
-          <button type="button" class="mood-btn" data-mood="anxious">焦虑</button>
-          <button type="button" class="mood-btn" data-mood="sleepy">困倦</button>
-          <button type="button" class="mood-btn" data-mood="pain">疼痛</button>
-        </div>
-
-        <div class="follow-up" id="followUp">
-          <p class="follow-question" id="followQuestion">选择一个状态，开始 Reset</p>
-          <textarea
-            id="taskInput"
-            rows="4"
-            maxlength="220"
-            placeholder=""
-          ></textarea>
-          <button class="start-btn" id="startReset" type="button">开始 Reset</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Screen 2: Timer -->
-    <section class="screen hidden" id="screen2">
-      <div class="timer-display" id="timerDisplay">03:00</div>
-      <p class="timer-hint">去喝杯水，远离屏幕</p>
-      <div class="step-guide" id="stepGuide">
-        <div class="step active" data-step="0"><span>01</span> 离开屏幕，慢呼吸 4 次</div>
-        <div class="step" data-step="1"><span>02</span> 把任务压缩成一句话</div>
-        <div class="step" data-step="2"><span>03</span> 开始执行最小下一步</div>
-      </div>
-    </section>
-
-    <!-- Screen 3: Result -->
-    <section class="screen hidden" id="screen3">
-      <div class="result-wrap">
-        <div class="decision-head">
-          <p class="eyebrow">Protocol</p>
-          <h2 id="decisionTitle">先生成你的协议</h2>
-          <p id="decisionReason">Reset Agent 会判断你该继续、休息，还是交给 Agent。</p>
-        </div>
-
-        <div class="action-area" id="actionArea">
-          <div class="next-action">
-            <span class="eyebrow">最小下一步</span>
-            <p id="nextActionText">最小下一步会在生成协议后出现。</p>
+        <div class="topbar-actions">
+          <div class="status-pill" id="statusPill">
+            <span class="live-dot"></span>
+            <span>当前状态：中等疲劳</span>
           </div>
-          <button type="button" class="primary-action" id="copyPrompt">复制交接 Prompt</button>
+          <button class="icon-button" id="settingsButton" type="button" aria-label="设置">
+            <span aria-hidden="true">⚙</span>
+          </button>
         </div>
+      </header>
 
-        <div class="details-area">
-          <details id="handoffDetails">
-            <summary>Agent Handoff Prompt</summary>
-            <textarea id="handoffPrompt" readonly rows="6">生成协议后，这里会出现可复制给编码 Agent 的接管提示词。</textarea>
-          </details>
-          <details id="protocolDetails">
-            <summary>完整协议步骤</summary>
-            <div class="timeline" id="protocolList">
-              <article>
-                <span>01</span>
-                <div>
-                  <h3>身体恢复</h3>
-                  <p>离开屏幕 30 秒，做一次慢呼吸，再回来处理最小下一步。</p>
+      <main class="workspace" aria-live="polite">
+        <nav class="progress-rail" aria-label="Reset 流程">
+          <button class="progress-step is-active" type="button" data-jump-step="1">
+            <span>1</span>
+            <strong>状态</strong>
+          </button>
+          <i aria-hidden="true"></i>
+          <button class="progress-step" type="button" data-jump-step="2">
+            <span>2</span>
+            <strong>卡点</strong>
+          </button>
+          <i aria-hidden="true"></i>
+          <button class="progress-step" type="button" data-jump-step="3">
+            <span>3</span>
+            <strong>Reset</strong>
+          </button>
+        </nav>
+
+        <section class="workbench">
+          <article class="step-card is-open" id="statePanel" data-step-panel="1">
+            <button class="step-card-head" type="button" data-toggle-panel="1">
+              <span>
+                <em>STEP 1</em>
+                <strong>捕捉你的状态</strong>
+              </span>
+              <small>花 30 秒，帮 Agent 更懂你</small>
+            </button>
+
+            <div class="step-card-body">
+              <div class="field-block">
+                <div class="field-label">
+                  <span>当前心情</span>
                 </div>
-              </article>
-              <article>
-                <span>02</span>
-                <div>
-                  <h3>任务重启</h3>
-                  <p>把现在的任务压缩成一个可在 5 分钟内验证的小动作。</p>
+                <div class="mood-grid" id="moodGrid" role="listbox" aria-label="当前心情">
+                  <button class="mood-option" type="button" data-mood="stuck" aria-pressed="false">
+                    <span class="mood-face">!</span>
+                    <span>卡住</span>
+                  </button>
+                  <button class="mood-option is-selected" type="button" data-mood="tired" aria-pressed="true">
+                    <span class="mood-face">~</span>
+                    <span>疲惫</span>
+                  </button>
+                  <button class="mood-option" type="button" data-mood="anxious" aria-pressed="false">
+                    <span class="mood-face">?</span>
+                    <span>焦虑</span>
+                  </button>
+                  <button class="mood-option" type="button" data-mood="sleepy" aria-pressed="false">
+                    <span class="mood-face">Z</span>
+                    <span>困倦</span>
+                  </button>
+                  <button class="mood-option" type="button" data-mood="pain" aria-pressed="false">
+                    <span class="mood-face">+</span>
+                    <span>疼痛</span>
+                  </button>
                 </div>
-              </article>
-              <article>
-                <span>03</span>
-                <div>
-                  <h3>Agent 接管</h3>
-                  <p>状态过差时，把任务边界写清楚，复制给 Codex / Cursor / Claude Code。</p>
+              </div>
+
+              <div class="field-block">
+                <div class="field-label">
+                  <span>硬扛冲动</span>
+                  <button class="hint-button" type="button" data-hint="想继续硬扛的冲动越高，越应该把任务拆小或交给 Agent。">?</button>
                 </div>
-              </article>
+                <div class="segmented" data-control="hardCarryScore">
+                  <button type="button" data-value="3">低</button>
+                  <button class="is-selected" type="button" data-value="6">中</button>
+                  <button type="button" data-value="9">高</button>
+                </div>
+                <p class="field-help">想继续硬扛的冲动强度</p>
+              </div>
+
+              <div class="field-block">
+                <div class="field-label">
+                  <span>清晰度</span>
+                  <button class="hint-button" type="button" data-hint="清晰度越低，越需要先恢复注意力，再决定下一步。">?</button>
+                </div>
+                <div class="segmented" data-control="clarityScore">
+                  <button type="button" data-value="3">低</button>
+                  <button class="is-selected" type="button" data-value="6">中</button>
+                  <button type="button" data-value="9">高</button>
+                </div>
+                <p class="field-help">现在思路的清晰程度</p>
+              </div>
+
+              <button class="primary-button" id="saveState" type="button">保存状态</button>
+              <p class="save-note" id="saveNote">状态已保存在本地</p>
             </div>
-          </details>
-        </div>
+          </article>
 
-        <div class="clarity-check" id="clarityCheck">
-          <p class="eyebrow">Review</p>
-          <p class="check-label">恢复后的清晰度？</p>
-          <div class="rating-bar" id="ratingBar">
-            <button type="button" data-score="1">1</button>
-            <button type="button" data-score="2">2</button>
-            <button type="button" data-score="3">3</button>
-            <button type="button" data-score="4">4</button>
-            <button type="button" data-score="5">5</button>
-            <button type="button" data-score="6">6</button>
-            <button type="button" data-score="7">7</button>
-            <button type="button" data-score="8">8</button>
-            <button type="button" data-score="9">9</button>
-            <button type="button" data-score="10">10</button>
+          <article class="step-card is-open" id="blockerPanel" data-step-panel="2">
+            <button class="step-card-head" type="button" data-toggle-panel="2">
+              <span>
+                <em>STEP 2</em>
+                <strong>告诉我你现在的卡点</strong>
+              </span>
+              <small>越具体，Agent 给出的 Reset 越有用</small>
+            </button>
+
+            <div class="step-card-body">
+              <label class="sr-only" for="taskInput">当前任务或卡点</label>
+              <textarea
+                id="taskInput"
+                maxlength="300"
+                rows="6"
+                placeholder="例如：登录页改了 5 次还不满意，越改越乱，已经卡了 2 小时，不想再硬撑了。"
+              ></textarea>
+              <div class="input-meta">
+                <span id="sourceBadge">等待输入</span>
+                <span><strong id="charCount">0</strong> / 300</span>
+              </div>
+
+              <div class="protocol-head">
+                <div>
+                  <p class="section-kicker">为你生成的 Reset 协议</p>
+                  <h2 id="decisionTitle">先保存状态，再生成协议</h2>
+                </div>
+                <span class="eta-pill" id="etaPill">预计 25 分钟</span>
+              </div>
+
+              <div class="protocol-list" id="protocolList">
+                <article>
+                  <span>1</span>
+                  <div>
+                    <h3>身体恢复</h3>
+                    <p>离开屏幕，做一次深呼吸，让大脑先降噪。</p>
+                  </div>
+                </article>
+                <article>
+                  <span>2</span>
+                  <div>
+                    <h3>任务重启</h3>
+                    <p>把当前任务压缩成一个 5 分钟内可验证的小动作。</p>
+                  </div>
+                </article>
+                <article>
+                  <span>3</span>
+                  <div>
+                    <h3>Agent 接管</h3>
+                    <p>状态过差时，把边界写清楚，交给 Agent 处理重复和发散的部分。</p>
+                  </div>
+                </article>
+              </div>
+
+              <button class="secondary-button" id="generateReset" type="button">
+                生成 Reset 协议
+              </button>
+            </div>
+          </article>
+
+          <article class="step-card timer-card is-open" id="resetPanel" data-step-panel="3">
+            <button class="step-card-head" type="button" data-toggle-panel="3">
+              <span>
+                <em>STEP 3</em>
+                <strong>开始 Reset</strong>
+              </span>
+              <small>跟随协议，恢复专注与掌控感</small>
+            </button>
+
+            <div class="step-card-body">
+              <div class="timer-ring" id="timerRing" style="--timer-progress: 100">
+                <div>
+                  <strong id="timerValue">03:00</strong>
+                  <span id="timerHint">专注呼吸</span>
+                </div>
+              </div>
+
+              <div class="timer-controls">
+                <button class="icon-button is-primary" id="startTimer" type="button" aria-label="开始计时">
+                  <span aria-hidden="true">▶</span>
+                </button>
+                <button class="icon-button" id="pauseTimer" type="button" aria-label="暂停计时">
+                  <span aria-hidden="true">Ⅱ</span>
+                </button>
+                <button class="icon-button" id="resetTimer" type="button" aria-label="重置计时">
+                  <span aria-hidden="true">↻</span>
+                </button>
+              </div>
+
+              <button class="handoff-cta" id="handoffCta" type="button">
+                <span class="shield-mark" aria-hidden="true">✓</span>
+                <strong>交给 Agent</strong>
+                <small id="handoffHint">你专注当下，重复的交给我。</small>
+              </button>
+            </div>
+          </article>
+        </section>
+
+        <section class="handoff-panel" aria-labelledby="handoffTitle">
+          <div class="handoff-head">
+            <div>
+              <p class="section-kicker">AGENT HANDOFF</p>
+              <h2 id="handoffTitle">给 Agent 的交接 Prompt</h2>
+            </div>
+            <button class="ghost-button" id="copyPrompt" type="button">复制 Prompt</button>
           </div>
-        </div>
-
-        <article class="reset-card" id="resetCard">
-          <p class="eyebrow">Good Night, Hackers</p>
-          <dl>
-            <div>
-              <dt>状态</dt>
-              <dd id="cardMood">等待生成</dd>
-            </div>
-            <div>
-              <dt>清晰度</dt>
-              <dd id="cardClarity">—</dd>
-            </div>
-            <div>
-              <dt>避免硬扛</dt>
-              <dd id="cardSaved">—</dd>
-            </div>
-          </dl>
-        </article>
-
-        <div class="stats-bar" id="statsBar">
-          今日已 Reset 0 次 · 累计避免硬扛 0 分钟
-        </div>
-
-        <div class="result-actions">
-          <button type="button" class="secondary-action" id="backToStart">再来一次</button>
-        </div>
-      </div>
-    </section>
+          <pre class="handoff-code" id="handoffPrompt" tabindex="0">1  背景：我正在处理一个开发任务，已经出现疲惫和硬扛倾向。
+2  目标：让页面更简洁清晰，聚焦核心信息，减少视觉噪音。
+3  限制：保持现有技术栈，不改动后端接口。
+4  交付：给出 3 种可执行的页面布局方案，并说明优缺点。</pre>
+        </section>
+      </main>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite">已复制</div>
     <script src="./app.js" type="module"></script>

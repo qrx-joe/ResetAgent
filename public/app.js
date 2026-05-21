@@ -1,123 +1,98 @@
 import { buildProtocol } from "./js/protocol-engine.js";
 
-// ============ DOM 引用 ============
-const $ = (sel) => document.querySelector(sel);
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
 const DOM = {
-  screen1: $("#screen1"),
-  screen2: $("#screen2"),
-  screen3: $("#screen3"),
-  moodBtns: document.querySelectorAll(".mood-btn"),
+  statusPill: $("#statusPill span:last-child"),
+  moodOptions: $$(".mood-option"),
+  segmentGroups: $$(".segmented"),
   taskInput: $("#taskInput"),
-  startReset: $("#startReset"),
-  timerDisplay: $("#timerDisplay"),
+  charCount: $("#charCount"),
+  saveState: $("#saveState"),
+  saveNote: $("#saveNote"),
+  generateReset: $("#generateReset"),
+  sourceBadge: $("#sourceBadge"),
   decisionTitle: $("#decisionTitle"),
-  decisionReason: $("#decisionReason"),
+  etaPill: $("#etaPill"),
   protocolList: $("#protocolList"),
+  timerRing: $("#timerRing"),
+  timerValue: $("#timerValue"),
+  timerHint: $("#timerHint"),
+  startTimer: $("#startTimer"),
+  pauseTimer: $("#pauseTimer"),
+  resetTimer: $("#resetTimer"),
+  handoffCta: $("#handoffCta"),
+  handoffHint: $("#handoffHint"),
   handoffPrompt: $("#handoffPrompt"),
-  handoffDetails: $("#handoffDetails"),
-  protocolDetails: $("#protocolDetails"),
   copyPrompt: $("#copyPrompt"),
-  nextActionText: $("#nextActionText"),
-  cardMood: $("#cardMood"),
-  cardClarity: $("#cardClarity"),
-  cardSaved: $("#cardSaved"),
-  backToStart: $("#backToStart"),
+  settingsButton: $("#settingsButton"),
   toast: $("#toast"),
+  progressSteps: $$(".progress-step"),
+  panels: $$("[data-step-panel]"),
 };
 
-// ============ 状态 ============
-let currentProtocol = null;
-let selectedMood = null;
-
-// ============ 情绪配置 ============
 const MOOD_CONFIG = {
-  stuck: {
-    question: "卡在什么地方？",
-    placeholder:
-      "例如：登录页提交后没有跳转，我已经改了 2 小时，越改越乱。",
+  stuck: { label: "卡住", status: "卡住", hint: "先缩小任务边界" },
+  tired: { label: "疲惫", status: "中等疲劳", hint: "先恢复判断力" },
+  anxious: { label: "焦虑", status: "焦虑偏高", hint: "先收窄 Demo 面" },
+  sleepy: { label: "困倦", status: "困倦", hint: "建议交给 Agent" },
+  pain: { label: "疼痛", status: "身体报警", hint: "先解除身体警报" },
+};
+
+const CONTROL_LABELS = {
+  hardCarryScore: {
+    3: "低",
+    6: "中",
+    9: "高",
   },
-  tired: {
-    question: "在做什么任务时感到疲劳？",
-    placeholder:
-      "例如：连续写了 6 小时 API 对接，眼睛酸涩，注意力开始涣散。",
-  },
-  anxious: {
-    question: "焦虑的来源是什么？",
-    placeholder: "例如：Demo 还有 3 小时，核心功能还没跑通，越急越乱。",
-  },
-  sleepy: {
-    question: "还需要完成什么？",
-    placeholder: "例如：还有一个接口要对接，但脑子已经转不动了。",
-  },
-  pain: {
-    question: "身体哪里不舒服？",
-    placeholder: "例如：右肩僵硬，手腕发麻，已经连续敲了 8 小时键盘。",
+  clarityScore: {
+    3: "低",
+    6: "中",
+    9: "高",
   },
 };
 
-// ============ 屏幕切换 ============
-function showScreen(n) {
-  DOM.screen1.classList.toggle("hidden", n !== 1);
-  DOM.screen2.classList.toggle("hidden", n !== 2);
-  DOM.screen3.classList.toggle("hidden", n !== 3);
-  window.scrollTo(0, 0);
-}
+const DEFAULT_PROMPT = `1  背景：我正在处理一个开发任务，已经出现疲惫和硬扛倾向。
+2  目标：让页面更简洁清晰，聚焦核心信息，减少视觉噪音。
+3  限制：保持现有技术栈，不改动后端接口。
+4  交付：给出 3 种可执行的页面布局方案，并说明优缺点。`;
 
-// ============ 情绪选择 ============
-function bindMoodButtons() {
-  DOM.moodBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      DOM.moodBtns.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      selectedMood = btn.dataset.mood;
+let selectedMood = "tired";
+let hardCarryScore = 6;
+let clarityScore = 6;
+let currentProtocol = null;
 
-      const config = MOOD_CONFIG[selectedMood];
-      const followUp = document.getElementById("followUp");
-      const followQuestion = document.getElementById("followQuestion");
-      if (config && followUp && followQuestion) {
-        followQuestion.textContent = config.question;
-        DOM.taskInput.placeholder = config.placeholder;
-        followUp.classList.add("visible");
-        DOM.taskInput.focus();
-      }
-    });
-  });
-}
-
-// ============ 计时器 ============
 const Timer = {
-  TOTAL_SECONDS: 180,
+  totalSeconds: 180,
   secondsLeft: 180,
   timerId: null,
 
-  format(total) {
-    const m = String(Math.floor(total / 60)).padStart(2, "0");
-    const s = String(total % 60).padStart(2, "0");
-    return `${m}:${s}`;
+  format(seconds) {
+    const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const rest = String(seconds % 60).padStart(2, "0");
+    return `${minutes}:${rest}`;
   },
 
-  update() {
-    DOM.timerDisplay.textContent = this.format(this.secondsLeft);
-
-    // Update step guide highlight based on remaining time
-    const steps = document.querySelectorAll(".step");
-    steps.forEach((s) => s.classList.remove("active"));
-    let activeStep = 0;
-    if (this.secondsLeft <= 60) activeStep = 2;
-    else if (this.secondsLeft <= 120) activeStep = 1;
-    const activeEl = document.querySelector(`.step[data-step="${activeStep}"]`);
-    if (activeEl) activeEl.classList.add("active");
+  render() {
+    const progress = Math.max(0, (this.secondsLeft / this.totalSeconds) * 100);
+    DOM.timerValue.textContent = this.format(this.secondsLeft);
+    DOM.timerRing.style.setProperty("--timer-progress", progress.toFixed(2));
   },
 
   start() {
     if (this.timerId) return;
+    DOM.timerHint.textContent = "专注呼吸";
     this.timerId = window.setInterval(() => {
       this.secondsLeft = Math.max(0, this.secondsLeft - 1);
-      this.update();
+      this.render();
+
+      if (this.secondsLeft === 120) DOM.timerHint.textContent = "压缩任务";
+      if (this.secondsLeft === 60) DOM.timerHint.textContent = "准备接管";
       if (this.secondsLeft === 0) {
         this.stop();
-        showScreen(3);
+        DOM.timerHint.textContent = "Reset 完成";
+        Toast.show("3 分钟 Reset 完成");
       }
     }, 1000);
   },
@@ -129,230 +104,280 @@ const Timer = {
 
   reset() {
     this.stop();
-    this.secondsLeft = this.TOTAL_SECONDS;
-    this.update();
+    this.secondsLeft = this.totalSeconds;
+    DOM.timerHint.textContent = "专注呼吸";
+    this.render();
   },
 };
 
-// ============ Toast ============
 const Toast = {
   show(message) {
     DOM.toast.textContent = message;
     DOM.toast.classList.add("is-visible");
-    window.setTimeout(() => DOM.toast.classList.remove("is-visible"), 1600);
+    window.setTimeout(() => DOM.toast.classList.remove("is-visible"), 1800);
   },
 };
 
-// ============ 存储 ============
-const Storage = {
-  KEY: "reset-agent-history",
-  MAX: 50,
+function getControlValue(controlName) {
+  return controlName === "hardCarryScore" ? hardCarryScore : clarityScore;
+}
 
-  save(session) {
-    const history = this.load();
-    history.unshift(session);
-    localStorage.setItem(this.KEY, JSON.stringify(history.slice(0, this.MAX)));
-  },
+function setControlValue(controlName, value) {
+  if (controlName === "hardCarryScore") hardCarryScore = value;
+  if (controlName === "clarityScore") clarityScore = value;
+  updateStatus();
+}
 
-  load() {
-    try {
-      return JSON.parse(localStorage.getItem(this.KEY) || "[]");
-    } catch {
-      return [];
-    }
-  },
-};
+function updateStatus(extra = "") {
+  const mood = MOOD_CONFIG[selectedMood] || MOOD_CONFIG.tired;
+  const hard = CONTROL_LABELS.hardCarryScore[hardCarryScore];
+  const clarity = CONTROL_LABELS.clarityScore[clarityScore];
+  DOM.statusPill.textContent = extra || `当前状态：${mood.status}`;
+  DOM.handoffHint.textContent =
+    hardCarryScore >= 9 || clarityScore <= 3 || selectedMood === "sleepy"
+      ? "你专注当下，重复的交给 Agent。"
+      : `${mood.hint} · 硬扛 ${hard} · 清晰度 ${clarity}`;
+}
 
-// ============ 协议渲染 ============
-function renderProtocol(protocol) {
-  DOM.decisionTitle.textContent = protocol.decision;
-  DOM.decisionReason.textContent = protocol.reason;
-  DOM.handoffPrompt.value = protocol.prompt;
-  DOM.nextActionText.textContent = protocol.minimalNext;
+function setActiveStep(step) {
+  DOM.progressSteps.forEach((item) => {
+    const value = Number(item.dataset.jumpStep);
+    item.classList.toggle("is-active", value === step);
+    item.classList.toggle("is-complete", value < step);
+  });
 
-  // Handoff Prompt 详情：handoff 时展开，否则折叠
-  if (DOM.handoffDetails) {
-    DOM.handoffDetails.open = protocol.handoff;
-  }
-
-  // 复制按钮：handoff 时显示，否则隐藏
-  if (DOM.copyPrompt) {
-    DOM.copyPrompt.style.display = protocol.handoff ? "inline-flex" : "none";
-  }
-
-  DOM.protocolList.innerHTML = protocol.steps
-    .map(
-      (step, i) => `
-        <article>
-          <span>${String(i + 1).padStart(2, "0")}</span>
-          <div>
-            <h3>${step.title}</h3>
-            <p>${step.body}</p>
-          </div>
-        </article>
-      `
-    )
-    .join("");
-
-  DOM.cardMood.textContent = protocol.moodLabel;
-  DOM.cardSaved.textContent = `约 ${protocol.savedMinutes} 分钟`;
-  DOM.cardClarity.textContent = "—";
-
-  // 将协议步骤动态注入第二屏倒计时引导
-  const stepEls = document.querySelectorAll(".step");
-  stepEls.forEach((el, i) => {
-    if (protocol.steps[i]) {
-      const stepNum = String(i + 1).padStart(2, "0");
-      el.innerHTML = `<span>${stepNum}</span> ${protocol.steps[i].title}：${protocol.steps[i].body}`;
-    }
+  DOM.panels.forEach((panel) => {
+    const value = Number(panel.dataset.stepPanel);
+    panel.classList.toggle("is-open", value === step || window.innerWidth > 760);
   });
 }
 
-// ============ 累计统计 ============
-function renderStats() {
-  const history = Storage.load();
-  const todayStr = new Date().toDateString();
-  const todaySessions = history.filter((s) => {
-    const d = new Date(s.createdAt);
-    return d.toDateString() === todayStr;
+function selectMood(mood) {
+  selectedMood = mood;
+  DOM.moodOptions.forEach((button) => {
+    const isSelected = button.dataset.mood === mood;
+    button.classList.toggle("is-selected", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
   });
-  const count = todaySessions.length;
-  const totalSaved = todaySessions.reduce(
-    (sum, s) => sum + (s.savedMinutes || 0),
-    0
+  updateStatus();
+}
+
+function bindMoodOptions() {
+  DOM.moodOptions.forEach((button) => {
+    button.addEventListener("click", () => {
+      selectMood(button.dataset.mood);
+    });
+  });
+}
+
+function bindSegments() {
+  DOM.segmentGroups.forEach((group) => {
+    const controlName = group.dataset.control;
+    group.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const value = Number(button.dataset.value);
+        setControlValue(controlName, value);
+        group.querySelectorAll("button").forEach((item) => {
+          item.classList.toggle("is-selected", Number(item.dataset.value) === value);
+        });
+      });
+    });
+
+    group.querySelectorAll("button").forEach((item) => {
+      item.classList.toggle(
+        "is-selected",
+        Number(item.dataset.value) === getControlValue(controlName)
+      );
+    });
+  });
+}
+
+function createProtocolItem(step, index) {
+  const article = document.createElement("article");
+
+  const number = document.createElement("span");
+  number.textContent = String(index + 1);
+
+  const content = document.createElement("div");
+  const title = document.createElement("h3");
+  const body = document.createElement("p");
+
+  title.textContent = step.title;
+  body.textContent = step.body;
+
+  content.append(title, body);
+  article.append(number, content);
+  return article;
+}
+
+function formatPrompt(protocol) {
+  if (!protocol?.prompt) return DEFAULT_PROMPT;
+
+  return protocol.prompt
+    .split("\n")
+    .map((line, index) => `${String(index + 1).padStart(2, " ")}  ${line}`)
+    .join("\n");
+}
+
+function renderProtocol(protocol) {
+  currentProtocol = protocol;
+
+  DOM.decisionTitle.textContent = protocol.decision || "先恢复，再行动";
+  DOM.etaPill.textContent = `预计 ${protocol.savedMinutes || 25} 分钟`;
+  DOM.sourceBadge.textContent =
+    protocol.source === "llm" ? "LLM 已生成" : "本地规则兜底";
+
+  DOM.protocolList.replaceChildren(
+    ...(protocol.steps || []).map((step, index) => createProtocolItem(step, index))
   );
 
-  const statsBar = document.getElementById("statsBar");
-  if (statsBar) {
-    statsBar.textContent = `今日已 Reset ${count} 次 · 累计避免硬扛 ${totalSaved} 分钟`;
-  }
+  DOM.handoffPrompt.textContent = formatPrompt(protocol);
+  DOM.handoffHint.textContent = protocol.handoff
+    ? "建议交给 Agent，别继续硬扛。"
+    : "保留边界，完成最小下一步。";
+
+  updateStatus(`当前状态：${protocol.moodLabel || MOOD_CONFIG[selectedMood].status}`);
+  setActiveStep(3);
+  Timer.reset();
 }
 
-// ============ 清晰度评分 ============
-function saveSessionWithScore(afterScore) {
-  if (!currentProtocol) return;
+function getTaskText() {
+  return DOM.taskInput.value.trim();
+}
 
-  const session = {
-    ...currentProtocol,
-    afterScore,
-    createdAt: new Date().toISOString(),
-  };
-
-  Storage.save(session);
-
-  DOM.cardClarity.textContent = `${afterScore}/10`;
+function saveState() {
+  updateStatus();
+  DOM.saveNote.textContent = "状态已保存在本地";
   Toast.show("状态已保存");
-  renderStats();
+  setActiveStep(2);
+  DOM.taskInput.focus();
 }
 
-function bindRatingButtons() {
-  const bar = document.getElementById("ratingBar");
-  if (!bar) return;
-  bar.querySelectorAll("button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const score = Number(btn.dataset.score);
-      saveSessionWithScore(score);
-      bar.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-    });
-  });
-}
+async function generateReset() {
+  const task = getTaskText();
 
-// ============ 核心：开始 Reset ============
-async function handleStartReset() {
-  if (!selectedMood) {
-    Toast.show("先选择一个状态");
-    return;
-  }
-
-  const task = DOM.taskInput.value.trim();
   if (!task) {
+    setActiveStep(2);
     DOM.taskInput.focus();
-    Toast.show("先描述一下情况");
+    Toast.show("先写下你现在卡在哪里");
     return;
   }
 
-  DOM.startReset.disabled = true;
-  DOM.startReset.textContent = "生成中...";
+  DOM.generateReset.disabled = true;
+  DOM.generateReset.textContent = "生成中...";
+  DOM.sourceBadge.textContent = "Agent 思考中";
+  updateStatus("当前状态：生成协议中");
 
   try {
-    currentProtocol = await buildProtocol({
+    const protocol = await buildProtocol({
       mood: selectedMood,
       task,
-      hardCarryScore: 7,
-      clarityScore: 4,
+      hardCarryScore,
+      clarityScore,
     });
-
-    renderProtocol(currentProtocol);
-    renderStats();
-    Timer.reset();
-
-    // Reset rating buttons
-    const ratingBar = document.getElementById("ratingBar");
-    if (ratingBar) {
-      ratingBar.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-    }
-
-    showScreen(2);
-    Timer.start();
-  } catch (err) {
-    console.error("[App] 生成协议失败:", err);
-    Toast.show("生成失败，请重试");
+    renderProtocol(protocol);
+    Toast.show(protocol.source === "llm" ? "LLM 协议已生成" : "已使用本地规则兜底");
+  } catch (error) {
+    console.error("[Reset Agent] 生成失败:", error);
+    DOM.sourceBadge.textContent = "生成失败";
+    Toast.show("生成失败，请稍后再试");
+    updateStatus();
   } finally {
-    DOM.startReset.disabled = false;
-    DOM.startReset.textContent = "开始 Reset";
+    DOM.generateReset.disabled = false;
+    DOM.generateReset.textContent = "生成 Reset 协议";
   }
 }
 
-// ============ 复制 Prompt ============
-async function copyHandoffPrompt() {
+async function copyPrompt() {
+  const content = DOM.handoffPrompt.textContent.trim();
+
   try {
-    await navigator.clipboard.writeText(DOM.handoffPrompt.value);
-    Toast.show("已复制交接 Prompt");
+    await navigator.clipboard.writeText(content);
+    Toast.show("交接 Prompt 已复制");
   } catch {
-    DOM.handoffPrompt.select();
+    const range = document.createRange();
+    range.selectNodeContents(DOM.handoffPrompt);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
     document.execCommand("copy");
-    Toast.show("已复制交接 Prompt");
+    selection.removeAllRanges();
+    Toast.show("交接 Prompt 已复制");
   }
 }
 
-// ============ 重置 ============
-function resetAll() {
-  DOM.taskInput.value = "";
-  selectedMood = null;
-  DOM.moodBtns.forEach((b) => b.classList.remove("active"));
-  const followUp = document.getElementById("followUp");
-  if (followUp) followUp.classList.remove("visible");
-  Timer.reset();
+function bindPanelToggles() {
+  $$("[data-toggle-panel]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveStep(Number(button.dataset.togglePanel));
+    });
+  });
 
-  const ratingBar = document.getElementById("ratingBar");
-  if (ratingBar) {
-    ratingBar.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-  }
-
-  showScreen(1);
-}
-
-// ============ 事件绑定 ============
-function bindEvents() {
-  bindMoodButtons();
-  bindRatingButtons();
-  DOM.startReset.addEventListener("click", handleStartReset);
-  DOM.copyPrompt.addEventListener("click", copyHandoffPrompt);
-  DOM.backToStart.addEventListener("click", resetAll);
-
-  DOM.taskInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleStartReset();
-    }
+  DOM.progressSteps.forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveStep(Number(button.dataset.jumpStep));
+    });
   });
 }
 
-// ============ 初始化 ============
+function bindHints() {
+  $$(".hint-button").forEach((button) => {
+    button.addEventListener("click", () => Toast.show(button.dataset.hint));
+  });
+}
+
+function hydrateDemoIfNeeded() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("demo")) return;
+
+  selectMood("tired");
+  hardCarryScore = 6;
+  clarityScore = 6;
+  DOM.taskInput.value =
+    "登录页改了 5 次还不满意，越改越乱，已经卡了 2 小时，不想再硬撑了。";
+  DOM.charCount.textContent = String(DOM.taskInput.value.length);
+  bindSegments();
+  window.setTimeout(generateReset, 350);
+}
+
+function bindEvents() {
+  bindMoodOptions();
+  bindSegments();
+  bindPanelToggles();
+  bindHints();
+
+  DOM.saveState.addEventListener("click", saveState);
+  DOM.generateReset.addEventListener("click", generateReset);
+  DOM.copyPrompt.addEventListener("click", copyPrompt);
+  DOM.handoffCta.addEventListener("click", copyPrompt);
+  DOM.startTimer.addEventListener("click", Timer.start.bind(Timer));
+  DOM.pauseTimer.addEventListener("click", Timer.stop.bind(Timer));
+  DOM.resetTimer.addEventListener("click", Timer.reset.bind(Timer));
+  DOM.settingsButton.addEventListener("click", () => Toast.show("Demo 模式：在地址后加 ?demo=1"));
+
+  DOM.taskInput.addEventListener("input", () => {
+    DOM.charCount.textContent = String(DOM.taskInput.value.length);
+  });
+
+  DOM.taskInput.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      generateReset();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    const active = DOM.progressSteps.find((item) => item.classList.contains("is-active"));
+    setActiveStep(Number(active?.dataset.jumpStep || 1));
+  });
+}
+
 function init() {
   bindEvents();
-  Timer.update();
+  selectMood(selectedMood);
+  Timer.render();
+  setActiveStep(1);
+  hydrateDemoIfNeeded();
 }
 
 init();

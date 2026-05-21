@@ -27,6 +27,7 @@ server.err
 # Cache
 .uv-cache/
 *.tmp
+*.tsbuildinfo
 
 .vercel
 
