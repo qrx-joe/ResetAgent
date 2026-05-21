@@ -140,6 +140,26 @@ button {
   cursor: not-allowed;
 }
 
+.follow-up {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 300ms ease, transform 300ms ease;
+  pointer-events: none;
+}
+
+.follow-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.follow-question {
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: #ccc;
+}
+
 /* Screen 2: Timer */
 .timer-display {
   font-size: clamp(5rem, 22vw, 14rem);

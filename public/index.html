@@ -16,24 +16,26 @@
       <div class="brand">Reset Agent</div>
 
       <div class="intake-form">
-        <h1>你现在卡在什么地方？</h1>
+        <h1>你现在感觉怎么样？</h1>
 
         <div class="mood-grid" id="moodGrid">
-          <button type="button" class="mood-btn active" data-mood="stuck">卡住</button>
+          <button type="button" class="mood-btn" data-mood="stuck">卡住</button>
           <button type="button" class="mood-btn" data-mood="tired">疲劳</button>
           <button type="button" class="mood-btn" data-mood="anxious">焦虑</button>
           <button type="button" class="mood-btn" data-mood="sleepy">困倦</button>
           <button type="button" class="mood-btn" data-mood="pain">疼痛</button>
         </div>
 
-        <textarea
-          id="taskInput"
-          rows="4"
-          maxlength="220"
-          placeholder="例如：登录页提交后没有跳转，我已经改了 2 小时，越改越乱。"
-        ></textarea>
-
-        <button class="start-btn" id="startReset" type="button">开始 Reset</button>
+        <div class="follow-up" id="followUp">
+          <p class="follow-question" id="followQuestion">选择一个状态，开始 Reset</p>
+          <textarea
+            id="taskInput"
+            rows="4"
+            maxlength="220"
+            placeholder=""
+          ></textarea>
+          <button class="start-btn" id="startReset" type="button">开始 Reset</button>
+        </div>
       </div>
     </section>
 

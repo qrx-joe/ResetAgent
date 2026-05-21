@@ -26,7 +26,33 @@ const DOM = {
 
 // ============ 状态 ============
 let currentProtocol = null;
-let selectedMood = "stuck";
+let selectedMood = null;
+
+// ============ 情绪配置 ============
+const MOOD_CONFIG = {
+  stuck: {
+    question: "卡在什么地方？",
+    placeholder:
+      "例如：登录页提交后没有跳转，我已经改了 2 小时，越改越乱。",
+  },
+  tired: {
+    question: "在做什么任务时感到疲劳？",
+    placeholder:
+      "例如：连续写了 6 小时 API 对接，眼睛酸涩，注意力开始涣散。",
+  },
+  anxious: {
+    question: "焦虑的来源是什么？",
+    placeholder: "例如：Demo 还有 3 小时，核心功能还没跑通，越急越乱。",
+  },
+  sleepy: {
+    question: "还需要完成什么？",
+    placeholder: "例如：还有一个接口要对接，但脑子已经转不动了。",
+  },
+  pain: {
+    question: "身体哪里不舒服？",
+    placeholder: "例如：右肩僵硬，手腕发麻，已经连续敲了 8 小时键盘。",
+  },
+};
 
 // ============ 屏幕切换 ============
 function showScreen(n) {
@@ -43,6 +69,16 @@ function bindMoodButtons() {
       DOM.moodBtns.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       selectedMood = btn.dataset.mood;
+
+      const config = MOOD_CONFIG[selectedMood];
+      const followUp = document.getElementById("followUp");
+      const followQuestion = document.getElementById("followQuestion");
+      if (config && followUp && followQuestion) {
+        followQuestion.textContent = config.question;
+        DOM.taskInput.placeholder = config.placeholder;
+        followUp.classList.add("visible");
+        DOM.taskInput.focus();
+      }
     });
   });
 }
@@ -212,10 +248,15 @@ function bindRatingButtons() {
 
 // ============ 核心：开始 Reset ============
 async function handleStartReset() {
+  if (!selectedMood) {
+    Toast.show("先选择一个状态");
+    return;
+  }
+
   const task = DOM.taskInput.value.trim();
   if (!task) {
     DOM.taskInput.focus();
-    Toast.show("先写下当前任务");
+    Toast.show("先描述一下情况");
     return;
   }
 
@@ -266,9 +307,10 @@ async function copyHandoffPrompt() {
 // ============ 重置 ============
 function resetAll() {
   DOM.taskInput.value = "";
-  selectedMood = "stuck";
+  selectedMood = null;
   DOM.moodBtns.forEach((b) => b.classList.remove("active"));
-  DOM.moodBtns[0].classList.add("active");
+  const followUp = document.getElementById("followUp");
+  if (followUp) followUp.classList.remove("visible");
   Timer.reset();
 
   const ratingBar = document.getElementById("ratingBar");
