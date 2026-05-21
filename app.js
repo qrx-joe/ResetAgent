@@ -149,6 +149,15 @@ function renderProtocol(protocol) {
   DOM.cardSaved.textContent = `约 ${protocol.savedMinutes} 分钟`;
   DOM.cardNext.textContent = protocol.minimalNext;
   DOM.cardClarity.textContent = "—";
+
+  // 将协议步骤动态注入第二屏倒计时引导
+  const stepEls = document.querySelectorAll(".step");
+  stepEls.forEach((el, i) => {
+    if (protocol.steps[i]) {
+      const stepNum = String(i + 1).padStart(2, "0");
+      el.innerHTML = `<span>${stepNum}</span> ${protocol.steps[i].title}：${protocol.steps[i].body}`;
+    }
+  });
 }
 
 // ============ 累计统计 ============
