@@ -53,44 +53,51 @@
     <!-- Screen 3: Result -->
     <section class="screen hidden" id="screen3">
       <div class="result-wrap">
-        <div class="stats-bar" id="statsBar">
-          今日已 Reset 0 次 · 累计避免硬扛 0 分钟
-        </div>
-
         <div class="decision-head">
           <p class="eyebrow">Protocol</p>
           <h2 id="decisionTitle">先生成你的协议</h2>
           <p id="decisionReason">Reset Agent 会判断你该继续、休息，还是交给 Agent。</p>
         </div>
 
-        <div class="timeline" id="protocolList">
-          <article>
-            <span>01</span>
-            <div>
-              <h3>身体恢复</h3>
-              <p>离开屏幕 30 秒，做一次慢呼吸，再回来处理最小下一步。</p>
-            </div>
-          </article>
-          <article>
-            <span>02</span>
-            <div>
-              <h3>任务重启</h3>
-              <p>把现在的任务压缩成一个可在 5 分钟内验证的小动作。</p>
-            </div>
-          </article>
-          <article>
-            <span>03</span>
-            <div>
-              <h3>Agent 接管</h3>
-              <p>状态过差时，把任务边界写清楚，复制给 Codex / Cursor / Claude Code。</p>
-            </div>
-          </article>
+        <div class="action-area" id="actionArea">
+          <div class="next-action">
+            <span class="eyebrow">最小下一步</span>
+            <p id="nextActionText">最小下一步会在生成协议后出现。</p>
+          </div>
+          <button type="button" class="primary-action" id="copyPrompt">复制交接 Prompt</button>
         </div>
 
-        <div class="handoff-box">
-          <p class="eyebrow">Agent Handoff</p>
-          <textarea id="handoffPrompt" readonly rows="6">生成协议后，这里会出现可复制给编码 Agent 的接管提示词。</textarea>
-          <button type="button" class="secondary-action" id="copyPrompt">复制 Prompt</button>
+        <div class="details-area">
+          <details id="handoffDetails">
+            <summary>Agent Handoff Prompt</summary>
+            <textarea id="handoffPrompt" readonly rows="6">生成协议后，这里会出现可复制给编码 Agent 的接管提示词。</textarea>
+          </details>
+          <details id="protocolDetails">
+            <summary>完整协议步骤</summary>
+            <div class="timeline" id="protocolList">
+              <article>
+                <span>01</span>
+                <div>
+                  <h3>身体恢复</h3>
+                  <p>离开屏幕 30 秒，做一次慢呼吸，再回来处理最小下一步。</p>
+                </div>
+              </article>
+              <article>
+                <span>02</span>
+                <div>
+                  <h3>任务重启</h3>
+                  <p>把现在的任务压缩成一个可在 5 分钟内验证的小动作。</p>
+                </div>
+              </article>
+              <article>
+                <span>03</span>
+                <div>
+                  <h3>Agent 接管</h3>
+                  <p>状态过差时，把任务边界写清楚，复制给 Codex / Cursor / Claude Code。</p>
+                </div>
+              </article>
+            </div>
+          </details>
         </div>
 
         <div class="clarity-check" id="clarityCheck">
@@ -112,7 +119,6 @@
 
         <article class="reset-card" id="resetCard">
           <p class="eyebrow">Good Night, Hackers</p>
-          <h2>今日 Reset 卡片</h2>
           <dl>
             <div>
               <dt>状态</dt>
@@ -127,8 +133,11 @@
               <dd id="cardSaved">—</dd>
             </div>
           </dl>
-          <p id="cardNext">最小下一步会在生成协议后出现。</p>
         </article>
+
+        <div class="stats-bar" id="statsBar">
+          今日已 Reset 0 次 · 累计避免硬扛 0 分钟
+        </div>
 
         <div class="result-actions">
           <button type="button" class="secondary-action" id="backToStart">再来一次</button>

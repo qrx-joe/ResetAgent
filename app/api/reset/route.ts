@@ -203,6 +203,9 @@ export async function POST(request: NextRequest) {
 
     const state = stateMap[mood];
     const handoff = isHandoffRecommended(mood, hardCarryScore, clarityScore);
+    const minimalNext = handoff
+      ? "复制交接 Prompt，让 Agent 只做复现、定位或列出最小修复建议。"
+      : (content.next as string) || state.next;
 
     const protocol = {
       source: "llm",
@@ -225,9 +228,7 @@ export async function POST(request: NextRequest) {
             : hardCarryScore >= 7
               ? 25
               : 15,
-      minimalNext: handoff
-        ? "复制交接 Prompt，让 Agent 只做复现、定位或列出最小修复建议。"
-        : (content.next as string) || state.next,
+      minimalNext,
       steps: [
         {
           title: "身体恢复",

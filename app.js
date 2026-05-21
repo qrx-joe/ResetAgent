@@ -15,11 +15,13 @@ const DOM = {
   decisionReason: $("#decisionReason"),
   protocolList: $("#protocolList"),
   handoffPrompt: $("#handoffPrompt"),
+  handoffDetails: $("#handoffDetails"),
+  protocolDetails: $("#protocolDetails"),
   copyPrompt: $("#copyPrompt"),
+  nextActionText: $("#nextActionText"),
   cardMood: $("#cardMood"),
   cardClarity: $("#cardClarity"),
   cardSaved: $("#cardSaved"),
-  cardNext: $("#cardNext"),
   backToStart: $("#backToStart"),
   toast: $("#toast"),
 };
@@ -166,6 +168,17 @@ function renderProtocol(protocol) {
   DOM.decisionTitle.textContent = protocol.decision;
   DOM.decisionReason.textContent = protocol.reason;
   DOM.handoffPrompt.value = protocol.prompt;
+  DOM.nextActionText.textContent = protocol.minimalNext;
+
+  // Handoff Prompt 详情：handoff 时展开，否则折叠
+  if (DOM.handoffDetails) {
+    DOM.handoffDetails.open = protocol.handoff;
+  }
+
+  // 复制按钮：handoff 时显示，否则隐藏
+  if (DOM.copyPrompt) {
+    DOM.copyPrompt.style.display = protocol.handoff ? "inline-flex" : "none";
+  }
 
   DOM.protocolList.innerHTML = protocol.steps
     .map(
@@ -183,7 +196,6 @@ function renderProtocol(protocol) {
 
   DOM.cardMood.textContent = protocol.moodLabel;
   DOM.cardSaved.textContent = `约 ${protocol.savedMinutes} 分钟`;
-  DOM.cardNext.textContent = protocol.minimalNext;
   DOM.cardClarity.textContent = "—";
 
   // 将协议步骤动态注入第二屏倒计时引导
