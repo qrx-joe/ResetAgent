@@ -9,6 +9,7 @@ const DOM = {
   progressSteps: $$(".progress-step"),
   moodOptions: $$(".mood-option"),
   segmentGroups: $$(".segmented"),
+  templateButtons: $$(".template-chip"),
   stateSummary: $("#stateSummary"),
   taskInput: $("#taskInput"),
   charCount: $("#charCount"),
@@ -270,6 +271,34 @@ function getTaskText() {
   return DOM.taskInput.value.trim();
 }
 
+function setTaskText(value) {
+  DOM.taskInput.value = value;
+  updateCharCount();
+}
+
+function updateCharCount() {
+  DOM.charCount.textContent = String(DOM.taskInput.value.length);
+}
+
+function appendTemplate(button) {
+  const template = button.dataset.template || "";
+  const current = DOM.taskInput.value.trim();
+  const separator = current ? "\n" : "";
+  const maxLength = Number(DOM.taskInput.maxLength || 300);
+  let nextValue = `${current}${separator}${template}`;
+  let message = button.dataset.toast || "模板已追加";
+
+  if (nextValue.length > maxLength) {
+    nextValue = nextValue.slice(0, maxLength);
+    message = "已追加模板，内容接近上限";
+  }
+
+  setTaskText(nextValue);
+  DOM.sourceBadge.textContent = "模板已追加";
+  DOM.taskInput.focus();
+  Toast.show(message);
+}
+
 function saveState() {
   if (!validateState()) return;
   updateStatus();
@@ -341,8 +370,7 @@ function restartFlow() {
   hardCarryScore = null;
   clarityScore = null;
   maxVisitedPage = 1;
-  DOM.taskInput.value = "";
-  DOM.charCount.textContent = "0";
+  setTaskText("");
   DOM.sourceBadge.textContent = "等待输入";
   DOM.decisionTitle.textContent = "先生成你的 Reset 协议";
   DOM.handoffPrompt.textContent = DEFAULT_PROMPT;
@@ -366,9 +394,7 @@ function hydrateDemoIfNeeded() {
   hardCarryScore = 6;
   clarityScore = 6;
   syncSegments();
-  DOM.taskInput.value =
-    "登录页改了 5 次还不满意，越改越乱，已经卡了 2 小时，不想再硬撑了。";
-  DOM.charCount.textContent = String(DOM.taskInput.value.length);
+  setTaskText("登录页改了 5 次还不满意，越改越乱，已经卡了 2 小时，不想再硬撑了。");
   renderStateSummary();
   goToPage(2);
   window.setTimeout(generateReset, 350);
@@ -392,6 +418,10 @@ function bindEvents() {
     button.addEventListener("click", () => Toast.show(button.dataset.hint));
   });
 
+  DOM.templateButtons.forEach((button) => {
+    button.addEventListener("click", () => appendTemplate(button));
+  });
+
   $$("[data-next-page]").forEach((button) => {
     button.addEventListener("click", () => goToPage(Number(button.dataset.nextPage)));
   });
@@ -412,7 +442,7 @@ function bindEvents() {
   });
 
   DOM.taskInput.addEventListener("input", () => {
-    DOM.charCount.textContent = String(DOM.taskInput.value.length);
+    updateCharCount();
   });
 
   DOM.taskInput.addEventListener("keydown", (event) => {

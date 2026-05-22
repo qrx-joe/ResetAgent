@@ -432,6 +432,70 @@ pre:focus-visible {
   font-weight: 800;
 }
 
+.template-library {
+  margin: 18px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(7, 12, 17, 0.38);
+  padding: 16px;
+}
+
+.template-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.template-head h2 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.template-head > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.template-chip {
+  display: grid;
+  min-height: 66px;
+  align-content: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(5, 9, 13, 0.58);
+  color: var(--text);
+  padding: 11px 12px;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.template-chip:hover {
+  border-color: rgba(88, 217, 165, 0.62);
+  background: rgba(88, 217, 165, 0.1);
+  transform: translateY(-1px);
+}
+
+.template-chip span {
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.template-chip small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
 #taskInput {
   width: 100%;
   min-height: 230px;
@@ -871,8 +935,17 @@ pre:focus-visible {
   }
 
   .metric-grid,
+  .template-grid,
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .template-head {
+    flex-direction: column;
+  }
+
+  .template-head > span {
+    white-space: normal;
   }
 
   #taskInput {

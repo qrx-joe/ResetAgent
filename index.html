@@ -140,6 +140,73 @@
                 <span>清晰度 未选</span>
               </div>
 
+              <section class="template-library" aria-label="常见卡点模板">
+                <div class="template-head">
+                  <div>
+                    <p class="section-kicker">COMMON BLOCKERS</p>
+                    <h2>常见卡点模板</h2>
+                  </div>
+                  <span>点一下追加，可继续编辑</span>
+                </div>
+
+                <div class="template-grid">
+                  <button
+                    class="template-chip"
+                    type="button"
+                    data-template="页面已经改了好几轮，越改越乱，我现在分不清哪些信息应该保留，哪些应该删掉。"
+                    data-toast="UI 卡点已追加"
+                  >
+                    <span>UI 越改越乱</span>
+                    <small>信息过载</small>
+                  </button>
+                  <button
+                    class="template-chip"
+                    type="button"
+                    data-template="同一个 bug 调试了 2 小时还没有定位，开始怀疑是不是方向错了，需要先收敛到最小复现。"
+                    data-toast="调试卡点已追加"
+                  >
+                    <span>调试 2 小时</span>
+                    <small>需要最小复现</small>
+                  </button>
+                  <button
+                    class="template-chip"
+                    type="button"
+                    data-template="Demo 快到了，核心流程虽然能跑，但稳定性和展示顺序还不够清楚，我有点开始发散。"
+                    data-toast="Demo 卡点已追加"
+                  >
+                    <span>Demo 前发散</span>
+                    <small>需要收窄展示</small>
+                  </button>
+                  <button
+                    class="template-chip"
+                    type="button"
+                    data-template="部署后页面出现白屏或状态不对，本地看起来正常，但线上表现和预期不一致。"
+                    data-toast="部署卡点已追加"
+                  >
+                    <span>部署后白屏</span>
+                    <small>本地线上不一致</small>
+                  </button>
+                  <button
+                    class="template-chip"
+                    type="button"
+                    data-template="接口或大模型调用已经接上了，但返回内容、超时、兜底逻辑还没有完全跑顺。"
+                    data-toast="接口卡点已追加"
+                  >
+                    <span>接口对不上</span>
+                    <small>API / LLM</small>
+                  </button>
+                  <button
+                    class="template-chip"
+                    type="button"
+                    data-template="需求又变了，我不确定现在应该继续完善，还是先冻结范围，保证可以按时提交。"
+                    data-toast="范围卡点已追加"
+                  >
+                    <span>需求又变了</span>
+                    <small>需要冻结范围</small>
+                  </button>
+                </div>
+              </section>
+
               <label class="sr-only" for="taskInput">当前任务或卡点</label>
               <textarea
                 id="taskInput"
