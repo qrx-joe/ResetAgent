@@ -65,6 +65,7 @@ const Timer = {
   totalSeconds: 180,
   secondsLeft: 180,
   timerId: null,
+  isRunning: false,
 
   format(seconds) {
     const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -78,9 +79,20 @@ const Timer = {
     DOM.timerRing.style.setProperty("--timer-progress", progress.toFixed(2));
   },
 
+  renderControls() {
+    DOM.startTimer.classList.toggle("is-primary", !this.isRunning);
+    DOM.pauseTimer.classList.toggle("is-primary", this.isRunning);
+    DOM.startTimer.disabled = this.isRunning;
+    DOM.pauseTimer.disabled = !this.isRunning;
+    DOM.startTimer.setAttribute("aria-pressed", String(this.isRunning));
+    DOM.pauseTimer.setAttribute("aria-pressed", String(this.isRunning));
+  },
+
   start() {
     if (this.timerId) return;
+    this.isRunning = true;
     DOM.timerHint.textContent = "专注呼吸";
+    this.renderControls();
     this.timerId = window.setInterval(() => {
       this.secondsLeft = Math.max(0, this.secondsLeft - 1);
       this.render();
@@ -97,6 +109,8 @@ const Timer = {
   stop() {
     window.clearInterval(this.timerId);
     this.timerId = null;
+    this.isRunning = false;
+    this.renderControls();
   },
 
   reset() {
@@ -104,6 +118,7 @@ const Timer = {
     this.secondsLeft = this.totalSeconds;
     DOM.timerHint.textContent = "专注呼吸";
     this.render();
+    this.renderControls();
   },
 };
 
@@ -457,6 +472,7 @@ function init() {
   bindEvents();
   updateStatus();
   Timer.render();
+  Timer.renderControls();
   goToPage(1);
   hydrateDemoIfNeeded();
 }
