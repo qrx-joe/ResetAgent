@@ -237,6 +237,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const hardCarryScoreNum = Number(hardCarryScore);
+    const clarityScoreNum = Number(clarityScore);
+    if (
+      !Number.isFinite(hardCarryScoreNum) ||
+      hardCarryScoreNum < 1 ||
+      hardCarryScoreNum > 10 ||
+      !Number.isFinite(clarityScoreNum) ||
+      clarityScoreNum < 1 ||
+      clarityScoreNum > 10
+    ) {
+      return NextResponse.json(
+        { error: "hardCarryScore 和 clarityScore 必须是 1-10 之间的数字" },
+        { status: 400 }
+      );
+    }
+
     const apiKey = process.env.QWEN_API_KEY || process.env.DEEPSEEK_API_KEY;
     const apiEndpoint =
       process.env.QWEN_API_ENDPOINT ||
@@ -275,8 +291,8 @@ export async function POST(request: NextRequest) {
             content: buildSystemPrompt({
               mood,
               task,
-              hardCarryScore,
-              clarityScore,
+              hardCarryScore: hardCarryScoreNum,
+              clarityScore: clarityScoreNum,
             }),
           },
           { role: "user", content: "请生成 Reset 协议。" },
@@ -317,7 +333,7 @@ export async function POST(request: NextRequest) {
     }
 
     const state = stateMap[mood];
-    const handoff = isHandoffRecommended(mood, hardCarryScore, clarityScore);
+    const handoff = isHandoffRecommended(mood, hardCarryScoreNum, clarityScoreNum);
     const reason = asText(content.reason, state.cause);
     const recoveryAction = asText(
       content.recoveryAction,
@@ -335,7 +351,7 @@ export async function POST(request: NextRequest) {
     const savedMinutes = clamp(
       asNumber(
         content.savedMinutes,
-        hardCarryScore >= 9 ? 40 : hardCarryScore >= 7 ? 25 : 15
+        hardCarryScoreNum >= 9 ? 40 : hardCarryScoreNum >= 7 ? 25 : 15
       ),
       15,
       45
@@ -345,8 +361,8 @@ export async function POST(request: NextRequest) {
       buildAgentPrompt({
         task,
         moodLabel: state.label,
-        hardCarryScore,
-        clarityScore,
+        hardCarryScore: hardCarryScoreNum,
+        clarityScore: clarityScoreNum,
         reason,
         minimalNext,
         executionSteps,
@@ -359,8 +375,8 @@ export async function POST(request: NextRequest) {
       mood,
       moodLabel: state.label,
       task,
-      hardCarryScore,
-      clarityScore,
+      hardCarryScore: hardCarryScoreNum,
+      clarityScore: clarityScoreNum,
       handoff,
       decision: asText(content.decision, handoff ? "交给 Agent 接管" : state.decision),
       reason,
