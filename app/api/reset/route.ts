@@ -75,6 +75,107 @@ function parseJsonContent(raw: string) {
   return JSON.parse(cleaned);
 }
 
+type ResetStep = {
+  title: string;
+  body: string;
+};
+
+function asText(value: unknown, fallback = "") {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function asNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeExecutionSteps(value: unknown): ResetStep[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const step = item as Record<string, unknown>;
+      const title = asText(step.title);
+      const body = asText(step.body);
+      if (!title || !body) return null;
+      return { title, body };
+    })
+    .filter((item): item is ResetStep => Boolean(item))
+    .slice(0, 3);
+}
+
+function buildFallbackExecutionSteps(task: string, minimalNext: string): ResetStep[] {
+  return [
+    {
+      title: "复述卡点",
+      body: `把当前问题压缩成一句可验证描述：${task}`,
+    },
+    {
+      title: "隔离变量",
+      body: "只保留一个最可能相关的页面、接口或文件，暂停新增功能和视觉微调。",
+    },
+    {
+      title: "验证一次",
+      body: minimalNext,
+    },
+  ];
+}
+
+function buildAgentPrompt({
+  task,
+  moodLabel,
+  hardCarryScore,
+  clarityScore,
+  reason,
+  minimalNext,
+  executionSteps,
+}: {
+  task: string;
+  moodLabel: string;
+  hardCarryScore: number;
+  clarityScore: number;
+  reason: string;
+  minimalNext: string;
+  executionSteps: ResetStep[];
+}) {
+  const steps = executionSteps
+    .map((step, index) => `${index + 1}. ${step.title}：${step.body}`)
+    .join("\n");
+
+  return `【目标】
+接手下面这个开发卡点，并完成一个可验证的最小下一步。
+
+【当前卡点】
+${task}
+
+【状态】
+- 当前状态：${moodLabel}
+- 硬扛冲动：${hardCarryScore}/10
+- 清晰度：${clarityScore}/10
+
+【卡点判断】
+${reason}
+
+【建议执行步骤】
+${steps}
+
+【最小下一步】
+${minimalNext}
+
+【约束】
+- 不要重构，不要扩展范围
+- 不要改动无关文件
+- 优先复现、定位、验证，不急着堆功能
+- 每一步都要能在 5 分钟内验证
+
+【交付】
+请输出：你执行了哪一步、观察到什么、下一步最小建议是什么。`;
+}
+
 function buildSystemPrompt({
   mood,
   task,
@@ -87,7 +188,13 @@ function buildSystemPrompt({
   clarityScore: number;
 }) {
   const state = stateMap[mood];
-  return `你是一个开发者状态恢复助手，专门帮助开发者在疲劳、焦虑、卡住或困倦时快速恢复并找到最小下一步。
+  return `你是 Reset Agent，一个面向开发者的状态恢复与任务拆解助手。
+
+你的任务不是泛泛安慰，也不是逐字复述用户输入，而是根据用户真实卡点生成：
+1. 当前为什么卡住
+2. 3 分钟内如何恢复判断力
+3. 接下来如何拆成可执行、可验证的小步骤
+4. 可以直接复制给编程 Agent 的交接 Prompt
 
 开发者当前状态：
 - 状态类型：${state.label}
@@ -95,12 +202,20 @@ function buildSystemPrompt({
 - 想继续硬扛的冲动：${hardCarryScore}/10
 - 当前清晰度：${clarityScore}/10
 
-请生成一个 JSON 对象，包含以下字段：
-- decision: 建议动作（15字以内）
-- reason: 为什么卡住的分析（1-2句话）
-- body: 30秒身体恢复指令（具体、可执行）
-- next: 最小下一步行动（可在5分钟内完成）
-- savedMinutes: 预估避免的无效时间（数字，15-45之间）`;
+请只返回 JSON 对象，不要 Markdown，不要代码块。字段如下：
+- decision: 针对当前卡点的建议动作，15字以内，必须具体。
+- reason: 为什么会卡住，1-2句话，必须引用或概括用户输入里的具体情况。
+- recoveryAction: 30秒身体恢复指令，具体、可执行。
+- minimalNext: 最小下一步行动，必须能在5分钟内完成。
+- executionSteps: 3个执行步骤数组，每个元素包含 title 和 body。步骤要围绕用户输入的具体卡点，避免“继续优化”“检查一下”这种空话。
+- handoffPrompt: 可以直接复制给 Codex/Cursor/Claude Code 的交接 Prompt，包含目标、上下文、执行步骤、约束、验收标准。
+- savedMinutes: 预估避免的无效时间，数字，15-45之间。
+
+生成要求：
+- 如果用户说的是部署、白屏、接口、UI、Demo、调试、需求变化，要针对这个场景给步骤。
+- 如果信息不足，第一步应该是最小复现或补充观察，而不是直接改代码。
+- 不要建议大重构，不要扩大范围。
+- 语言要短、硬、能执行。`;
 }
 
 export async function POST(request: NextRequest) {
@@ -203,9 +318,40 @@ export async function POST(request: NextRequest) {
 
     const state = stateMap[mood];
     const handoff = isHandoffRecommended(mood, hardCarryScore, clarityScore);
-    const minimalNext = handoff
-      ? "复制交接 Prompt，让 Agent 只做复现、定位或列出最小修复建议。"
-      : (content.next as string) || state.next;
+    const reason = asText(content.reason, state.cause);
+    const recoveryAction = asText(
+      content.recoveryAction,
+      asText(content.body, state.body)
+    );
+    const minimalNext = asText(
+      content.minimalNext,
+      asText(content.next, state.next)
+    );
+    const normalizedSteps = normalizeExecutionSteps(content.executionSteps);
+    const executionSteps =
+      normalizedSteps.length > 0
+        ? normalizedSteps
+        : buildFallbackExecutionSteps(task, minimalNext);
+    const savedMinutes = clamp(
+      asNumber(
+        content.savedMinutes,
+        hardCarryScore >= 9 ? 40 : hardCarryScore >= 7 ? 25 : 15
+      ),
+      15,
+      45
+    );
+    const handoffPrompt = asText(
+      content.handoffPrompt,
+      buildAgentPrompt({
+        task,
+        moodLabel: state.label,
+        hardCarryScore,
+        clarityScore,
+        reason,
+        minimalNext,
+        executionSteps,
+      })
+    );
 
     const protocol = {
       source: "llm",
@@ -216,38 +362,19 @@ export async function POST(request: NextRequest) {
       hardCarryScore,
       clarityScore,
       handoff,
-      decision: handoff
-        ? "休息，并把最小任务交给 Agent"
-        : (content.decision as string) || state.decision,
-      reason: (content.reason as string) || state.cause,
-      savedMinutes:
-        typeof content.savedMinutes === "number"
-          ? content.savedMinutes
-          : hardCarryScore >= 9
-            ? 40
-            : hardCarryScore >= 7
-              ? 25
-              : 15,
+      decision: asText(content.decision, handoff ? "交给 Agent 接管" : state.decision),
+      reason,
+      savedMinutes,
       minimalNext,
       steps: [
         {
           title: "身体恢复",
-          body: (content.body as string) || state.body,
+          body: recoveryAction,
         },
-        {
-          title: "任务诊断",
-          body: (content.reason as string) || state.cause,
-        },
-        {
-          title: handoff ? "Agent 接管" : "最小下一步",
-          body: handoff
-            ? "复制交接 Prompt，让 Agent 只做复现、定位或列出最小修复建议。"
-            : (content.next as string) || state.next,
-        },
+        { title: "卡点判断", body: reason },
+        ...executionSteps,
       ],
-      prompt: handoff
-        ? `【目标】\n在我休息期间，接手并完成以下任务的最小下一步：${task}\n\n【验证方式】\n完成后应能明确回答：\n1. 问题能否复现？复现步骤是什么？\n2. 最可能的 3 个原因是什么？\n3. 最小修复建议是什么（只改一处）？\n\n【约束】\n- 不要重构，不要扩展范围\n- 不要改动无关文件\n- 优先复现和定位，不急着改代码\n- 输出下一步可以验证的命令或检查点\n\n【检查点】\n开始前运行 git status 确认基线，所有改动控制在最小范围。\n\n【上下文】\n- 我的状态：${state.label}\n- 硬扛冲动：${hardCarryScore}/10\n- 清晰度：${clarityScore}/10\n- 继续硬扛会降低交付质量，请帮我守住最小边界。`
-        : `【目标】\n执行 3 分钟 Reset 后，完成最小下一步：${task}\n\n【验证方式】\n1. 身体恢复：做 3 次慢呼吸，肩膀是否比刚才放松？\n2. 任务简化：能否用一句话说清当前问题的核心？\n3. 行动验证：${minimalNext}\n\n【约束】\n- 不新增功能\n- 不追求完美方案\n- 只验证一个最小假设\n\n【检查点】\n- 身体恢复：肩膀是否比刚才放松？\n- 任务简化：能否用一句话说清当前问题的核心？\n- 行动验证：${minimalNext}\n\n【当前状态】\n${state.label} | 硬扛冲动 ${hardCarryScore}/10 | 清晰度 ${clarityScore}/10`,
+      prompt: handoffPrompt,
     };
 
     return NextResponse.json(protocol);

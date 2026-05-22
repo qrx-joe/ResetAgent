@@ -111,6 +111,66 @@ function isHandoffRecommended(mood, hardCarryScore, clarityScore) {
   return mood === "sleepy" || hardCarryScore >= 8 || clarityScore <= 3;
 }
 
+function buildExecutionSteps(task, minimalNext) {
+  return [
+    {
+      title: "复述卡点",
+      body: `把问题压缩成一句可验证描述：${task}`,
+    },
+    {
+      title: "隔离变量",
+      body: "只保留一个最可能相关的页面、接口或文件，暂停新增功能和视觉微调。",
+    },
+    {
+      title: "执行验证",
+      body: minimalNext,
+    },
+  ];
+}
+
+function buildAgentPrompt({
+  task,
+  stateLabel,
+  hardCarryScore,
+  clarityScore,
+  cause,
+  minimalNext,
+  executionSteps,
+}) {
+  const steps = executionSteps
+    .map((step, index) => `${index + 1}. ${step.title}：${step.body}`)
+    .join("\n");
+
+  return `【目标】
+接手下面这个开发卡点，并完成一个可验证的最小下一步。
+
+【当前卡点】
+${task}
+
+【状态】
+- 当前状态：${stateLabel}
+- 硬扛冲动：${hardCarryScore}/10
+- 清晰度：${clarityScore}/10
+
+【卡点判断】
+${cause}
+
+【建议执行步骤】
+${steps}
+
+【最小下一步】
+${minimalNext}
+
+【约束】
+- 不要重构，不要扩展范围
+- 不要改动无关文件
+- 优先复现、定位、验证，不急着堆功能
+- 每一步都要能在 5 分钟内验证
+
+【交付】
+请输出：你执行了哪一步、观察到什么、下一步最小建议是什么。`;
+}
+
 // ============ 规则引擎 ============
 export function buildProtocolWithRules({
   mood,
@@ -127,6 +187,7 @@ export function buildProtocolWithRules({
   const minimalNext = handoff
     ? "复制交接 Prompt，让 Agent 只做复现、定位或列出最小修复建议。"
     : state.next;
+  const executionSteps = buildExecutionSteps(task, minimalNext);
 
   const taskInsight = analyzeTask(task, mood);
   const cause = taskInsight
@@ -147,15 +208,18 @@ export function buildProtocolWithRules({
     minimalNext,
     steps: [
       { title: "身体恢复", body: state.body },
-      { title: "任务诊断", body: cause },
-      {
-        title: handoff ? "Agent 接管" : "最小下一步",
-        body: minimalNext,
-      },
+      { title: "卡点判断", body: cause },
+      ...executionSteps,
     ],
-    prompt: handoff
-      ? `【目标】\n在我休息期间，接手并完成以下任务的最小下一步：${task}\n\n【验证方式】\n完成后应能明确回答：\n1. 问题能否复现？复现步骤是什么？\n2. 最可能的 3 个原因是什么？\n3. 最小修复建议是什么（只改一处）？\n\n【约束】\n- 不要重构，不要扩展范围\n- 不要改动无关文件\n- 优先复现和定位，不急着改代码\n- 输出下一步可以验证的命令或检查点\n\n【检查点】\n开始前运行 git status 确认基线，所有改动控制在最小范围。\n\n【上下文】\n- 我的状态：${state.label}\n- 硬扛冲动：${hardCarryScore}/10\n- 清晰度：${clarityScore}/10\n${taskInsight ? "- 诊断补充：" + taskInsight + "\n" : ""}- 继续硬扛会降低交付质量，请帮我守住最小边界。`
-      : `【目标】\n执行 3 分钟 Reset 后，完成最小下一步：${task}\n\n【验证方式】\n1. 身体恢复：做 3 次慢呼吸，肩膀是否比刚才放松？\n2. 任务简化：能否用一句话说清当前问题的核心？\n3. 行动验证：${minimalNext}\n\n【约束】\n- 不新增功能\n- 不追求完美方案\n- 只验证一个最小假设\n\n【当前状态】\n${state.label} | 硬扛冲动 ${hardCarryScore}/10 | 清晰度 ${clarityScore}/10\n${taskInsight ? "诊断：" + taskInsight : ""}`,
+    prompt: buildAgentPrompt({
+      task,
+      stateLabel: state.label,
+      hardCarryScore,
+      clarityScore,
+      cause,
+      minimalNext,
+      executionSteps,
+    }),
   };
 }
 
