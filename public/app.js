@@ -8,7 +8,8 @@ const DOM = {
   pages: $$("[data-page]"),
   progressSteps: $$(".progress-step"),
   moodOptions: $$(".mood-option"),
-  segmentGroups: $$(".segmented"),
+  segmentGroups: $$("[data-control]"),
+  afterSegmentGroups: $$("[data-after-control]"),
   templateButtons: $$(".template-chip"),
   stateSummary: $("#stateSummary"),
   taskInput: $("#taskInput"),
@@ -32,10 +33,18 @@ const DOM = {
   copyPrompt: $("#copyPrompt"),
   togglePrompt: $("#togglePrompt"),
   restartFlow: $("#restartFlow"),
+  saveRecovery: $("#saveRecovery"),
   settingsButton: $("#settingsButton"),
   summaryMood: $("#summaryMood"),
   summaryDecision: $("#summaryDecision"),
   summarySaved: $("#summarySaved"),
+  todayCardDate: $("#todayCardDate"),
+  todayResetCount: $("#todayResetCount"),
+  todaySavedMinutes: $("#todaySavedMinutes"),
+  todayClarityDelta: $("#todayClarityDelta"),
+  todayHardCarryDelta: $("#todayHardCarryDelta"),
+  todayCardDecision: $("#todayCardDecision"),
+  todayCardTask: $("#todayCardTask"),
   toast: $("#toast"),
 };
 
@@ -56,12 +65,17 @@ const VALUE_LABELS = {
 const DEFAULT_PROMPT =
   "完成状态填写和卡点描述后，这里会生成可复制给 Codex / Cursor / Claude Code 的交接 Prompt。";
 
+const SESSIONS_STORAGE_KEY = "reset-agent-sessions";
+
 let currentPage = 1;
 let maxVisitedPage = 1;
 let selectedMood = null;
 let hardCarryScore = null;
 let clarityScore = null;
+let afterHardCarryScore = null;
+let afterClarityScore = null;
 let currentProtocol = null;
+let currentSessionId = null;
 
 const Timer = {
   totalSeconds: 180,
@@ -145,6 +159,149 @@ const Toast = {
     window.setTimeout(() => DOM.toast.classList.remove("is-visible"), 1700);
   },
 };
+
+const SessionStore = {
+  read() {
+    try {
+      const raw = window.localStorage.getItem(SESSIONS_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  },
+
+  write(sessions) {
+    try {
+      window.localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  upsert(session) {
+    const sessions = this.read();
+    const nextSessions = sessions.filter((item) => item.id !== session.id);
+    nextSessions.unshift(session);
+    return this.write(nextSessions.slice(0, 40));
+  },
+
+  today() {
+    const todayKey = new Date().toDateString();
+    return this.read().filter((session) => {
+      if (!session.createdAt) return false;
+      return new Date(session.createdAt).toDateString() === todayKey;
+    });
+  },
+};
+
+function createSessionId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return `reset-${Date.now()}-${Math.round(Math.random() * 10000)}`;
+}
+
+function formatCardDate(date = new Date()) {
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  }).format(date);
+}
+
+function formatDelta(before, after, direction = "higher") {
+  if (before == null || after == null) return "待验证";
+  const beforeLabel = VALUE_LABELS[before] || String(before);
+  const afterLabel = VALUE_LABELS[after] || String(after);
+  const improved = direction === "higher" ? after > before : after < before;
+  const unchanged = after === before;
+  if (unchanged) return `${beforeLabel} → ${afterLabel}`;
+  return `${beforeLabel} → ${afterLabel}${improved ? " 好转" : " 回落"}`;
+}
+
+function renderTodayCard(session = null) {
+  const todaySessions = SessionStore.today();
+  const savedMinutes = todaySessions.reduce(
+    (total, item) => total + Number(item.savedMinutes || 0),
+    0
+  );
+  const currentTask = session?.task || currentProtocol?.task || "";
+  const clippedTask =
+    currentTask.length > 74 ? `${currentTask.slice(0, 74)}...` : currentTask;
+
+  DOM.todayCardDate.textContent = formatCardDate();
+  DOM.todayResetCount.textContent = `${todaySessions.length} 次`;
+  DOM.todaySavedMinutes.textContent = `约 ${savedMinutes} 分钟`;
+  DOM.todayClarityDelta.textContent = session
+    ? formatDelta(session.before?.clarityScore, session.after?.clarityScore, "higher")
+    : "待验证";
+  DOM.todayHardCarryDelta.textContent = session
+    ? formatDelta(session.before?.hardCarryScore, session.after?.hardCarryScore, "lower")
+    : "待验证";
+  DOM.todayCardDecision.textContent = session
+    ? session.decisionLabel
+    : currentProtocol
+      ? "等待恢复后验证"
+      : "等待生成协议";
+  DOM.todayCardTask.textContent = clippedTask
+    ? `卡点：${clippedTask}`
+    : "完成恢复后验证后，这里会生成可截图的状态卡片。";
+}
+
+function resetRecoveryCheck() {
+  afterHardCarryScore = null;
+  afterClarityScore = null;
+  syncAfterSegments();
+  renderTodayCard();
+}
+
+function saveRecovery() {
+  if (!currentProtocol) {
+    Toast.show("先生成 Reset 协议");
+    return;
+  }
+  if (!Timer.completed) {
+    Toast.show("先完成 3 分钟 Reset");
+    return;
+  }
+  if (afterHardCarryScore == null) {
+    Toast.show("选择恢复后的硬扛冲动");
+    return;
+  }
+  if (afterClarityScore == null) {
+    Toast.show("选择恢复后的清晰度");
+    return;
+  }
+
+  const session = {
+    id: currentSessionId || createSessionId(),
+    createdAt: new Date().toISOString(),
+    mood: selectedMood,
+    moodLabel: currentProtocol.moodLabel || MOOD_CONFIG[selectedMood]?.label || "已填写",
+    task: currentProtocol.task || getTaskText(),
+    decision: currentProtocol.decision || "Reset 完成",
+    decisionLabel: currentProtocol.handoff ? "交给 Agent" : "最小行动",
+    savedMinutes: Number(currentProtocol.savedMinutes || 25),
+    before: {
+      hardCarryScore,
+      clarityScore,
+    },
+    after: {
+      hardCarryScore: afterHardCarryScore,
+      clarityScore: afterClarityScore,
+    },
+    source: currentProtocol.source || "local",
+    handoff: Boolean(currentProtocol.handoff),
+  };
+
+  currentSessionId = session.id;
+  if (!SessionStore.upsert(session)) {
+    Toast.show("本地记录失败，但卡片已生成");
+  } else {
+    Toast.show("今日状态卡片已生成");
+  }
+  renderTodayCard(session);
+}
 
 function goToPage(page) {
   if (page === 4 && !Timer.completed) {
@@ -245,6 +402,37 @@ function syncSegments() {
   });
 }
 
+function setAfterControlValue(controlName, value) {
+  if (controlName === "afterHardCarryScore") afterHardCarryScore = value;
+  if (controlName === "afterClarityScore") afterClarityScore = value;
+}
+
+function bindAfterSegments() {
+  DOM.afterSegmentGroups.forEach((group) => {
+    const controlName = group.dataset.afterControl;
+    group.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const value = Number(button.dataset.value);
+        setAfterControlValue(controlName, value);
+        group.querySelectorAll("button").forEach((item) => {
+          item.classList.toggle("is-selected", Number(item.dataset.value) === value);
+        });
+      });
+    });
+  });
+}
+
+function syncAfterSegments() {
+  DOM.afterSegmentGroups.forEach((group) => {
+    const controlName = group.dataset.afterControl;
+    const currentValue =
+      controlName === "afterHardCarryScore" ? afterHardCarryScore : afterClarityScore;
+    group.querySelectorAll("button").forEach((item) => {
+      item.classList.toggle("is-selected", Number(item.dataset.value) === currentValue);
+    });
+  });
+}
+
 function isStateComplete() {
   return selectedMood != null && hardCarryScore != null && clarityScore != null;
 }
@@ -291,6 +479,7 @@ function formatPrompt(protocol) {
 
 function renderProtocol(protocol) {
   currentProtocol = protocol;
+  currentSessionId = createSessionId();
   DOM.decisionTitle.textContent = protocol.decision || "先恢复，再行动";
   DOM.etaPill.textContent = `预计 ${protocol.savedMinutes || 25} 分钟`;
   DOM.sourceBadge.textContent = protocol.source === "llm" ? "LLM 已生成" : "本地规则兜底";
@@ -304,6 +493,7 @@ function renderProtocol(protocol) {
   DOM.summaryDecision.textContent = protocol.handoff ? "建议交接" : "最小行动";
   DOM.summarySaved.textContent = `约 ${protocol.savedMinutes || 25} 分钟`;
   updateStatus(`当前状态：${protocol.moodLabel || MOOD_CONFIG[selectedMood]?.status || "已填写"}`);
+  resetRecoveryCheck();
   Timer.reset();
 }
 
@@ -426,9 +616,12 @@ function requestHandoff() {
 
 function restartFlow() {
   currentProtocol = null;
+  currentSessionId = null;
   selectedMood = null;
   hardCarryScore = null;
   clarityScore = null;
+  afterHardCarryScore = null;
+  afterClarityScore = null;
   maxVisitedPage = 1;
   setTaskText("");
   DOM.sourceBadge.textContent = "等待输入";
@@ -442,6 +635,8 @@ function restartFlow() {
     button.setAttribute("aria-pressed", "false");
   });
   syncSegments();
+  syncAfterSegments();
+  renderTodayCard();
   updateStatus();
   Timer.reset();
   goToPage(1);
@@ -464,11 +659,13 @@ function hydrateDemoIfNeeded() {
 function bindEvents() {
   bindMoodOptions();
   bindSegments();
+  bindAfterSegments();
 
   DOM.saveState.addEventListener("click", saveState);
   DOM.generateReset.addEventListener("click", generateReset);
   DOM.copyPrompt.addEventListener("click", copyPrompt);
   DOM.togglePrompt.addEventListener("click", togglePrompt);
+  DOM.saveRecovery.addEventListener("click", saveRecovery);
   DOM.handoffCta.addEventListener("click", requestHandoff);
   DOM.openHandoff.addEventListener("click", requestHandoff);
   DOM.restartFlow.addEventListener("click", restartFlow);
@@ -519,6 +716,7 @@ function bindEvents() {
 function init() {
   bindEvents();
   updateStatus();
+  renderTodayCard();
   Timer.render();
   Timer.renderControls();
   goToPage(1);

@@ -6,16 +6,20 @@
     <title>Reset Agent Poster</title>
     <style>
       :root {
-        color-scheme: light;
-        --ink: #111820;
-        --muted: #5f6c78;
-        --teal: #0f8f83;
-        --coral: #ef6651;
-        --amber: #f2b84b;
-        --blue: #3f6fce;
+        color-scheme: dark;
+        --bg: #05070a;
+        --panel: rgba(15, 22, 30, 0.92);
+        --line: rgba(148, 163, 184, 0.2);
+        --text: #f3f8f7;
+        --muted: #9aa7b2;
+        --dim: #687782;
+        --accent: #58d9a5;
+        --accent-strong: #7df3bf;
+        --danger: #ff7a66;
+        --blue: #78a7ff;
         font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", "Microsoft YaHei", sans-serif;
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "Microsoft YaHei", "PingFang SC", sans-serif;
       }
 
       * {
@@ -25,209 +29,414 @@
       body {
         margin: 0;
         min-width: 320px;
-        background: #dfe5e8;
-        color: var(--ink);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: #000;
+        color: var(--text);
       }
 
       .poster {
+        position: relative;
         width: min(100vw, 1920px);
         aspect-ratio: 16 / 9;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: 1.08fr 0.92fr;
-        gap: 52px;
-        padding: 76px;
-        background:
-          linear-gradient(135deg, rgba(15, 143, 131, 0.13), transparent 34%),
-          linear-gradient(235deg, rgba(239, 102, 81, 0.18), transparent 38%),
-          #f7f8fa;
         overflow: hidden;
+        display: grid;
+        grid-template-columns: 1.02fr 0.98fr;
+        gap: 46px;
+        padding: 72px;
+        background:
+          radial-gradient(circle at 8% 8%, rgba(88, 217, 165, 0.18), transparent 30rem),
+          radial-gradient(circle at 88% 18%, rgba(120, 167, 255, 0.13), transparent 24rem),
+          linear-gradient(135deg, #06090d 0%, #0a1118 48%, #040507 100%);
       }
 
-      .main {
+      .poster::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.78), transparent 82%);
+      }
+
+      .left,
+      .right {
+        position: relative;
+        z-index: 1;
+      }
+
+      .left {
         display: grid;
         align-content: space-between;
       }
 
-      .eyebrow {
-        margin: 0 0 18px;
-        color: var(--teal);
-        font-size: 28px;
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .mark {
+        display: grid;
+        width: 72px;
+        height: 72px;
+        place-items: center;
+        border: 1px solid rgba(88, 217, 165, 0.62);
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(88, 217, 165, 0.38), transparent 70%),
+          #111a20;
+        box-shadow: 0 0 0 12px rgba(88, 217, 165, 0.08);
+        font-size: 36px;
+        font-weight: 950;
+      }
+
+      .brand p {
+        margin: 0;
+        color: var(--accent);
+        font-size: 24px;
         font-weight: 900;
-        letter-spacing: 0;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
+      }
+
+      .headline {
+        margin-top: 62px;
       }
 
       h1 {
         margin: 0;
-        max-width: 980px;
-        font-size: clamp(62px, 6.8vw, 142px);
-        line-height: 0.92;
+        max-width: 940px;
+        font-size: clamp(84px, 7.4vw, 142px);
+        line-height: 0.9;
         letter-spacing: 0;
       }
 
-      .subtitle {
-        max-width: 860px;
+      .claim {
+        max-width: 880px;
         margin: 34px 0 0;
         color: var(--muted);
-        font-size: clamp(28px, 2.15vw, 42px);
-        line-height: 1.28;
-        font-weight: 700;
+        font-size: 42px;
+        line-height: 1.22;
+        font-weight: 750;
+      }
+
+      .claim strong {
+        color: var(--accent-strong);
+      }
+
+      .problem {
+        display: grid;
+        gap: 14px;
+        max-width: 920px;
+      }
+
+      .problem-card {
+        display: grid;
+        grid-template-columns: 86px 1fr;
+        gap: 18px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(7, 12, 17, 0.72);
+        padding: 20px 22px;
+      }
+
+      .problem-card b {
+        display: grid;
+        width: 64px;
+        height: 64px;
+        place-items: center;
+        border-radius: 16px;
+        background: rgba(255, 122, 102, 0.13);
+        color: var(--danger);
+        font-size: 30px;
+      }
+
+      .problem-card strong {
+        display: block;
+        font-size: 28px;
+        line-height: 1.2;
+      }
+
+      .problem-card span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 22px;
+        line-height: 1.38;
       }
 
       .tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 14px;
+        gap: 12px;
+        margin-top: 24px;
       }
 
       .tags span {
-        padding: 14px 18px;
+        border: 1px solid rgba(88, 217, 165, 0.32);
         border-radius: 999px;
-        background: #ffffff;
-        color: var(--ink);
-        font-size: 24px;
+        background: rgba(88, 217, 165, 0.1);
+        color: var(--accent-strong);
+        padding: 12px 16px;
+        font-size: 21px;
         font-weight: 900;
-        box-shadow: 0 18px 50px rgba(20, 32, 46, 0.1);
       }
 
-      .side {
+      .right {
         display: grid;
-        gap: 24px;
-        align-content: stretch;
-      }
-
-      .flow,
-      .demo,
-      .compare {
-        border: 1px solid #dbe2e6;
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.88);
-        box-shadow: 0 20px 60px rgba(20, 32, 46, 0.12);
+        grid-template-rows: auto 1fr auto;
+        gap: 20px;
       }
 
       .flow {
-        display: grid;
-        gap: 14px;
-        padding: 26px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        padding: 24px;
       }
 
-      .flow h2,
-      .demo h2,
-      .compare h2 {
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      .section-title h2 {
         margin: 0;
         font-size: 34px;
       }
 
-      .flow ol {
-        display: grid;
-        gap: 12px;
-        margin: 8px 0 0;
-        padding: 0;
-        list-style: none;
+      .section-title span {
+        color: var(--accent);
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
       }
 
-      .flow li {
+      .steps {
         display: grid;
-        grid-template-columns: 56px 1fr;
-        gap: 16px;
-        align-items: center;
-        font-size: 26px;
-        font-weight: 800;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
       }
 
-      .flow b {
+      .step {
+        min-height: 142px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(5, 9, 13, 0.72);
+        padding: 16px;
+      }
+
+      .step b {
         display: grid;
-        width: 56px;
-        height: 56px;
+        width: 38px;
+        height: 38px;
         place-items: center;
-        border-radius: 16px;
-        background: #e7f6f4;
-        color: var(--teal);
+        border-radius: 999px;
+        background: var(--accent);
+        color: #052017;
+        font-size: 18px;
       }
 
-      .compare {
+      .step strong {
+        display: block;
+        margin-top: 14px;
+        font-size: 22px;
+        line-height: 1.18;
+      }
+
+      .step span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.34;
+      }
+
+      .mock {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
+        grid-template-columns: 1fr 260px;
+        gap: 20px;
+        min-height: 0;
+      }
+
+      .screen,
+      .timer {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(88, 217, 165, 0.12), transparent 70%),
+          rgba(7, 12, 17, 0.78);
         padding: 24px;
       }
 
-      .compare > div {
-        min-height: 210px;
-        padding: 22px;
-        border-radius: 16px;
+      .screen {
+        display: grid;
+        align-content: space-between;
       }
 
-      .before {
-        background: #fff0ec;
-      }
-
-      .after {
-        background: #e8f7f4;
-      }
-
-      .compare strong {
-        display: block;
-        margin-bottom: 14px;
-        font-size: 30px;
-      }
-
-      .compare p {
-        margin: 0;
+      .screen-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
         color: var(--muted);
-        font-size: 24px;
-        line-height: 1.35;
-        font-weight: 700;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .screen h3 {
+        max-width: 620px;
+        margin: 24px 0 0;
+        font-size: 48px;
+        line-height: 1.08;
+      }
+
+      .protocol {
+        display: grid;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .protocol div {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(5, 9, 13, 0.65);
+        padding: 13px;
+      }
+
+      .protocol b {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #052017;
+      }
+
+      .protocol span {
+        color: var(--muted);
+        font-size: 20px;
+        line-height: 1.34;
+        font-weight: 750;
+      }
+
+      .timer {
+        display: grid;
+        place-items: center;
+        text-align: center;
+      }
+
+      .ring {
+        display: grid;
+        width: 192px;
+        aspect-ratio: 1;
+        place-items: center;
+        border-radius: 999px;
+        background:
+          radial-gradient(circle, rgba(8, 14, 19, 1) 0 55%, transparent 56%),
+          conic-gradient(var(--accent) 78%, rgba(88, 217, 165, 0.14) 0);
+        box-shadow: 0 0 70px rgba(88, 217, 165, 0.14);
+      }
+
+      .ring strong {
+        font-size: 43px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .timer p {
+        margin: 20px 0 0;
+        color: var(--text);
+        font-size: 28px;
+        font-weight: 900;
+      }
+
+      .timer small {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.32;
+      }
+
+      .footer {
+        display: grid;
+        grid-template-columns: 1fr 184px;
+        gap: 20px;
+        align-items: stretch;
       }
 
       .demo {
-        display: grid;
-        grid-template-columns: 1fr 260px;
-        gap: 24px;
-        align-items: center;
-        padding: 26px;
+        border: 1px solid rgba(88, 217, 165, 0.32);
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, rgba(88, 217, 165, 0.16), transparent 48%),
+          rgba(7, 12, 17, 0.82);
+        padding: 22px 24px;
       }
 
-      .demo p {
-        margin: 12px 0 0;
+      .demo strong {
+        display: block;
+        color: var(--accent);
+        font-size: 18px;
+        letter-spacing: 0.08em;
+      }
+
+      .demo h2 {
+        margin: 8px 0 0;
+        font-size: 38px;
+      }
+
+      .url {
+        display: inline-block;
+        margin-top: 12px;
+        color: var(--accent-strong);
+        font-size: 28px;
+        font-weight: 950;
+      }
+
+      .repo {
+        display: block;
+        margin-top: 8px;
         color: var(--muted);
-        font-size: 24px;
-        line-height: 1.35;
-        font-weight: 700;
+        font-size: 20px;
+        font-weight: 800;
       }
 
       .qr {
         display: grid;
-        width: 260px;
-        min-height: 180px;
         place-items: center;
+        border: 1px solid var(--line);
         border-radius: 18px;
-        padding: 18px;
-        background: #111820;
-        color: var(--coral);
-        font-size: 22px;
-        font-weight: 900;
-        text-align: center;
+        background: #f6fbf9;
+        padding: 16px;
       }
 
       .qr img {
-        width: 128px;
-        height: 128px;
-        border-radius: 10px;
-        background: #ffffff;
-      }
-
-      .qr small {
-        display: block;
-        margin-top: 10px;
-        color: #ffffff;
-        font-size: 17px;
-        line-height: 1.28;
-        word-break: break-all;
+        width: 148px;
+        height: 148px;
+        image-rendering: pixelated;
       }
 
       @media (max-width: 900px) {
+        body {
+          overflow: auto;
+        }
+
         .poster {
           width: 100%;
           min-height: 100vh;
@@ -236,70 +445,117 @@
           padding: 28px;
         }
 
-        .tags span,
-        .flow li,
-        .compare p,
-        .demo p {
-          font-size: 18px;
+        .mock,
+        .footer {
+          grid-template-columns: 1fr;
         }
 
-        .compare,
-        .demo {
-          grid-template-columns: 1fr;
+        .steps {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
     </style>
   </head>
   <body>
-    <main class="poster" aria-label="Reset Agent 项目海报">
-      <section class="main">
+    <main class="poster" aria-label="Reset Agent 16:9 项目海报">
+      <section class="left">
         <div>
-          <p class="eyebrow">Good Night, Hackers</p>
-          <h1>Reset Agent</h1>
-          <p class="subtitle">
-            开发者的 3 分钟状态恢复协议：判断继续、休息，还是把任务交给 Agent。
-          </p>
+          <div class="brand">
+            <span class="mark">R</span>
+            <p>Good Night, Hackers</p>
+          </div>
+
+          <div class="headline">
+            <h1>Reset Agent</h1>
+            <p class="claim">
+              开发者的 <strong>3 分钟恢复协议</strong>：判断继续、休息，还是把任务交给 Agent。
+            </p>
+          </div>
         </div>
-        <div class="tags">
-          <span>#AIAgent</span>
-          <span>#开发者状态</span>
-          <span>#健康交付</span>
-          <span>#AgentHandoff</span>
+
+        <div class="problem">
+          <div class="problem-card">
+            <b>!</b>
+            <div>
+              <strong>越疲劳，越硬扛；越硬扛，越发散。</strong>
+              <span>Reset Agent 把状态恢复、任务重启和 Agent 交接合成一个可执行流程。</span>
+            </div>
+          </div>
+          <div class="tags">
+            <span>#AIAgent</span>
+            <span>#开发者状态</span>
+            <span>#健康交付</span>
+            <span>#AgentHandoff</span>
+          </div>
         </div>
       </section>
 
-      <section class="side">
+      <section class="right">
         <article class="flow">
-          <h2>核心流程</h2>
-          <ol>
-            <li><b>1</b><span>识别疲劳、焦虑、卡住、困倦</span></li>
-            <li><b>2</b><span>生成身体恢复 + 任务重启方案</span></li>
-            <li><b>3</b><span>3 分钟倒计时执行</span></li>
-            <li><b>4</b><span>状态过差时生成 Agent 接管 Prompt</span></li>
-          </ol>
+          <div class="section-title">
+            <h2>核心流程</h2>
+            <span>NOT A TIMER, A RESET PROTOCOL</span>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <b>1</b>
+              <strong>识别状态</strong>
+              <span>疲劳、焦虑、卡住、困倦、疼痛</span>
+            </div>
+            <div class="step">
+              <b>2</b>
+              <strong>诊断卡点</strong>
+              <span>用 LLM 把混乱描述压缩成判断</span>
+            </div>
+            <div class="step">
+              <b>3</b>
+              <strong>3 分钟 Reset</strong>
+              <span>身体恢复 + 任务重启 + 最小下一步</span>
+            </div>
+            <div class="step">
+              <b>4</b>
+              <strong>交给 Agent</strong>
+              <span>生成可复制的 Handoff Prompt</span>
+            </div>
+          </div>
         </article>
 
-        <article class="compare">
-          <div class="before">
-            <strong>Before</strong>
-            <p>凌晨继续硬扛，同一个 bug 越改越乱，清晰度持续下降。</p>
-          </div>
-          <div class="after">
-            <strong>After</strong>
-            <p>完成一次 Reset，拿到最小下一步，必要时交给 Agent。</p>
-          </div>
-        </article>
+        <div class="mock">
+          <article class="screen">
+            <div>
+              <div class="screen-top">
+                <span>当前状态：疲惫</span>
+                <span>AI 生成协议</span>
+              </div>
+              <h3>先补兜底逻辑，再调试部署白屏。</h3>
+              <div class="protocol">
+                <div><b>1</b><span>站起来，做 3 次慢呼吸，让注意力先降噪。</span></div>
+                <div><b>2</b><span>把卡点拆成一个 5 分钟内能验证的小动作。</span></div>
+                <div><b>3</b><span>状态过差时，把重复和发散交给 Agent。</span></div>
+              </div>
+            </div>
+          </article>
 
-        <article class="demo">
-          <div>
-            <h2>Demo</h2>
-            <p>打开网站，输入当前卡住的任务，30 秒内生成 Reset 协议和 Agent Handoff Prompt。</p>
+          <aside class="timer">
+            <div class="ring">
+              <strong>03:00</strong>
+            </div>
+            <p>恢复后验证</p>
+            <small>记录前后对比，生成今日 Reset 卡片。</small>
+          </aside>
+        </div>
+
+        <footer class="footer">
+          <div class="demo">
+            <strong>LIVE DEMO</strong>
+            <h2>扫码体验 Reset Agent</h2>
+            <span class="url">reset-agent-green.vercel.app</span>
+            <span class="repo">GitHub: qrx-joe/ResetAgent</span>
           </div>
-          <div class="qr" aria-label="Demo URL">
+          <div class="qr" aria-label="Reset Agent Demo QR">
             <img src="./assets/demo-qr.png" alt="Reset Agent Demo QR" />
-            <small>扫码体验 Demo</small>
           </div>
-        </article>
+        </footer>
       </section>
     </main>
   </body>
