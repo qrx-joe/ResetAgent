@@ -24,7 +24,7 @@
         <div class="topbar-actions">
           <div class="status-pill" id="statusPill">
             <span class="live-dot"></span>
-            <span>当前状态：中等疲劳</span>
+            <span>当前状态：待填写</span>
           </div>
           <button class="icon-button" id="settingsButton" type="button" aria-label="设置">
             <span aria-hidden="true">⚙</span>
@@ -73,7 +73,7 @@
                     <span class="mood-face">!</span>
                     <span>卡住</span>
                   </button>
-                  <button class="mood-option is-selected" type="button" data-mood="tired" aria-pressed="true">
+                  <button class="mood-option" type="button" data-mood="tired" aria-pressed="false">
                     <span class="mood-face">~</span>
                     <span>疲惫</span>
                   </button>
@@ -100,7 +100,7 @@
                   </div>
                   <div class="segmented" data-control="hardCarryScore">
                     <button type="button" data-value="3">低</button>
-                    <button class="is-selected" type="button" data-value="6">中</button>
+                    <button type="button" data-value="6">中</button>
                     <button type="button" data-value="9">高</button>
                   </div>
                   <p class="field-help">想继续硬扛的冲动强度</p>
@@ -113,7 +113,7 @@
                   </div>
                   <div class="segmented" data-control="clarityScore">
                     <button type="button" data-value="3">低</button>
-                    <button class="is-selected" type="button" data-value="6">中</button>
+                    <button type="button" data-value="6">中</button>
                     <button type="button" data-value="9">高</button>
                   </div>
                   <p class="field-help">现在思路的清晰程度</p>
@@ -135,9 +135,9 @@
               </div>
 
               <div class="state-summary" id="stateSummary">
-                <span>疲惫</span>
-                <span>硬扛 中</span>
-                <span>清晰度 中</span>
+                <span>心情 未选</span>
+                <span>硬扛 未选</span>
+                <span>清晰度 未选</span>
               </div>
 
               <label class="sr-only" for="taskInput">当前任务或卡点</label>
@@ -243,15 +243,12 @@
                 <button class="ghost-button" id="copyPrompt" type="button">复制 Prompt</button>
               </div>
 
-              <pre class="handoff-code" id="handoffPrompt" tabindex="0">1  背景：我正在处理一个开发任务，已经出现疲惫和硬扛倾向。
-2  目标：让页面更简洁清晰，聚焦核心信息，减少视觉噪音。
-3  限制：保持现有技术栈，不改动后端接口。
-4  交付：给出 3 种可执行的页面布局方案，并说明优缺点。</pre>
+              <pre class="handoff-code" id="handoffPrompt" tabindex="0">完成状态填写和卡点描述后，这里会生成可复制给 Codex / Cursor / Claude Code 的交接 Prompt。</pre>
 
               <div class="summary-grid">
                 <div>
                   <span>状态</span>
-                  <strong id="summaryMood">疲惫</strong>
+                  <strong id="summaryMood">未填写</strong>
                 </div>
                 <div>
                   <span>判断</span>

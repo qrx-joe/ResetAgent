@@ -50,16 +50,14 @@ const VALUE_LABELS = {
   9: "高",
 };
 
-const DEFAULT_PROMPT = `1  背景：我正在处理一个开发任务，已经出现疲惫和硬扛倾向。
-2  目标：让页面更简洁清晰，聚焦核心信息，减少视觉噪音。
-3  限制：保持现有技术栈，不改动后端接口。
-4  交付：给出 3 种可执行的页面布局方案，并说明优缺点。`;
+const DEFAULT_PROMPT =
+  "完成状态填写和卡点描述后，这里会生成可复制给 Codex / Cursor / Claude Code 的交接 Prompt。";
 
 let currentPage = 1;
 let maxVisitedPage = 1;
-let selectedMood = "tired";
-let hardCarryScore = 6;
-let clarityScore = 6;
+let selectedMood = null;
+let hardCarryScore = null;
+let clarityScore = null;
 let currentProtocol = null;
 
 const Timer = {
@@ -134,22 +132,24 @@ function goToPage(page) {
 }
 
 function updateStatus(extra = "") {
-  const mood = MOOD_CONFIG[selectedMood] || MOOD_CONFIG.tired;
-  DOM.statusText.textContent = extra || `当前状态：${mood.status}`;
+  const mood = selectedMood ? MOOD_CONFIG[selectedMood] : null;
+  DOM.statusText.textContent = extra || `当前状态：${mood ? mood.status : "待填写"}`;
   DOM.handoffHint.textContent =
-    hardCarryScore >= 9 || clarityScore <= 3 || selectedMood === "sleepy"
-      ? "建议交给 Agent，别继续硬扛。"
-      : `${mood.hint} · 硬扛 ${VALUE_LABELS[hardCarryScore]} · 清晰度 ${VALUE_LABELS[clarityScore]}`;
+    !mood || hardCarryScore == null || clarityScore == null
+      ? "完成状态填写后，再决定是否交接。"
+      : hardCarryScore >= 9 || clarityScore <= 3 || selectedMood === "sleepy"
+        ? "建议交给 Agent，别继续硬扛。"
+        : `${mood.hint} · 硬扛 ${VALUE_LABELS[hardCarryScore]} · 清晰度 ${VALUE_LABELS[clarityScore]}`;
   renderStateSummary();
 }
 
 function renderStateSummary() {
   DOM.stateSummary.replaceChildren(
-    createChip(MOOD_CONFIG[selectedMood].label),
-    createChip(`硬扛 ${VALUE_LABELS[hardCarryScore]}`),
-    createChip(`清晰度 ${VALUE_LABELS[clarityScore]}`)
+    createChip(selectedMood ? MOOD_CONFIG[selectedMood].label : "心情 未选"),
+    createChip(`硬扛 ${hardCarryScore == null ? "未选" : VALUE_LABELS[hardCarryScore]}`),
+    createChip(`清晰度 ${clarityScore == null ? "未选" : VALUE_LABELS[clarityScore]}`)
   );
-  DOM.summaryMood.textContent = MOOD_CONFIG[selectedMood].label;
+  DOM.summaryMood.textContent = selectedMood ? MOOD_CONFIG[selectedMood].label : "未填写";
 }
 
 function createChip(text) {
@@ -195,6 +195,36 @@ function bindSegments() {
   });
 }
 
+function syncSegments() {
+  DOM.segmentGroups.forEach((group) => {
+    const controlName = group.dataset.control;
+    const currentValue = controlName === "hardCarryScore" ? hardCarryScore : clarityScore;
+    group.querySelectorAll("button").forEach((item) => {
+      item.classList.toggle("is-selected", Number(item.dataset.value) === currentValue);
+    });
+  });
+}
+
+function isStateComplete() {
+  return selectedMood != null && hardCarryScore != null && clarityScore != null;
+}
+
+function validateState() {
+  if (!selectedMood) {
+    Toast.show("先选择当前心情");
+    return false;
+  }
+  if (hardCarryScore == null) {
+    Toast.show("先选择硬扛冲动");
+    return false;
+  }
+  if (clarityScore == null) {
+    Toast.show("先选择清晰度");
+    return false;
+  }
+  return true;
+}
+
 function createProtocolItem(step, index) {
   const article = document.createElement("article");
   const number = document.createElement("span");
@@ -232,7 +262,7 @@ function renderProtocol(protocol) {
   DOM.handoffPrompt.textContent = formatPrompt(protocol);
   DOM.summaryDecision.textContent = protocol.handoff ? "建议交接" : "最小行动";
   DOM.summarySaved.textContent = `约 ${protocol.savedMinutes || 25} 分钟`;
-  updateStatus(`当前状态：${protocol.moodLabel || MOOD_CONFIG[selectedMood].status}`);
+  updateStatus(`当前状态：${protocol.moodLabel || MOOD_CONFIG[selectedMood]?.status || "已填写"}`);
   Timer.reset();
 }
 
@@ -241,6 +271,7 @@ function getTaskText() {
 }
 
 function saveState() {
+  if (!validateState()) return;
   updateStatus();
   Toast.show("状态已保存");
   goToPage(2);
@@ -248,6 +279,11 @@ function saveState() {
 }
 
 async function generateReset() {
+  if (!validateState()) {
+    goToPage(1);
+    return;
+  }
+
   const task = getTaskText();
   if (!task) {
     goToPage(2);
@@ -301,23 +337,35 @@ async function copyPrompt() {
 
 function restartFlow() {
   currentProtocol = null;
+  selectedMood = null;
+  hardCarryScore = null;
+  clarityScore = null;
+  maxVisitedPage = 1;
   DOM.taskInput.value = "";
   DOM.charCount.textContent = "0";
   DOM.sourceBadge.textContent = "等待输入";
   DOM.decisionTitle.textContent = "先生成你的 Reset 协议";
   DOM.handoffPrompt.textContent = DEFAULT_PROMPT;
   DOM.summaryDecision.textContent = "等待生成";
+  DOM.summarySaved.textContent = "约 25 分钟";
+  DOM.moodOptions.forEach((button) => {
+    button.classList.remove("is-selected");
+    button.setAttribute("aria-pressed", "false");
+  });
+  syncSegments();
+  updateStatus();
   Timer.reset();
   goToPage(1);
 }
 
 function hydrateDemoIfNeeded() {
   const params = new URLSearchParams(window.location.search);
-  if (!params.has("demo")) return;
+  if (params.get("demo") !== "auto") return;
 
   selectMood("tired");
   hardCarryScore = 6;
   clarityScore = 6;
+  syncSegments();
   DOM.taskInput.value =
     "登录页改了 5 次还不满意，越改越乱，已经卡了 2 小时，不想再硬撑了。";
   DOM.charCount.textContent = String(DOM.taskInput.value.length);
@@ -338,7 +386,7 @@ function bindEvents() {
   DOM.startTimer.addEventListener("click", Timer.start.bind(Timer));
   DOM.pauseTimer.addEventListener("click", Timer.stop.bind(Timer));
   DOM.resetTimer.addEventListener("click", Timer.reset.bind(Timer));
-  DOM.settingsButton.addEventListener("click", () => Toast.show("Demo 模式：在地址后加 ?demo=1"));
+  DOM.settingsButton.addEventListener("click", () => Toast.show("自动演示：在地址后加 ?demo=auto"));
 
   $$(".hint-button").forEach((button) => {
     button.addEventListener("click", () => Toast.show(button.dataset.hint));
@@ -377,7 +425,7 @@ function bindEvents() {
 
 function init() {
   bindEvents();
-  selectMood(selectedMood);
+  updateStatus();
   Timer.render();
   goToPage(1);
   hydrateDemoIfNeeded();
