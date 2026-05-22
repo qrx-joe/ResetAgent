@@ -287,17 +287,19 @@
                     </button>
                   </div>
 
-                  <button class="handoff-cta" id="handoffCta" type="button">
+                  <button class="handoff-cta" id="handoffCta" type="button" disabled>
                     <span class="shield-mark" aria-hidden="true">✓</span>
                     <strong>准备交给 Agent</strong>
-                    <small id="handoffHint">先恢复判断力，再决定是否接管。</small>
+                    <small id="handoffHint">先完成 3 分钟 Reset，再决定是否接管。</small>
                   </button>
                 </aside>
               </div>
 
               <div class="page-actions two">
                 <button class="ghost-button" type="button" data-back-page="2">返回卡点</button>
-                <button class="primary-button" type="button" data-next-page="4">查看交接 Prompt</button>
+                <button class="primary-button" id="openHandoff" type="button" disabled>
+                  完成 Reset 后查看 Prompt
+                </button>
               </div>
             </div>
           </article>

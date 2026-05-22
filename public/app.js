@@ -27,6 +27,7 @@ const DOM = {
   resetTimer: $("#resetTimer"),
   handoffCta: $("#handoffCta"),
   handoffHint: $("#handoffHint"),
+  openHandoff: $("#openHandoff"),
   handoffPrompt: $("#handoffPrompt"),
   copyPrompt: $("#copyPrompt"),
   togglePrompt: $("#togglePrompt"),
@@ -67,6 +68,7 @@ const Timer = {
   secondsLeft: 180,
   timerId: null,
   isRunning: false,
+  completed: false,
 
   format(seconds) {
     const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -81,12 +83,23 @@ const Timer = {
   },
 
   renderControls() {
-    DOM.startTimer.classList.toggle("is-primary", !this.isRunning);
+    DOM.startTimer.classList.toggle("is-primary", !this.isRunning && !this.completed);
     DOM.pauseTimer.classList.toggle("is-primary", this.isRunning);
-    DOM.startTimer.disabled = this.isRunning;
+    DOM.startTimer.disabled = this.isRunning || this.completed;
     DOM.pauseTimer.disabled = !this.isRunning;
     DOM.startTimer.setAttribute("aria-pressed", String(this.isRunning));
     DOM.pauseTimer.setAttribute("aria-pressed", String(this.isRunning));
+    DOM.openHandoff.disabled = !this.completed;
+    DOM.openHandoff.textContent = this.completed
+      ? "查看交接 Prompt"
+      : "完成 Reset 后查看 Prompt";
+    DOM.handoffCta.disabled = !this.completed;
+    DOM.handoffCta.classList.toggle("is-unlocked", this.completed);
+    if (this.completed) {
+      DOM.handoffHint.textContent = "Reset 已完成，现在可以决定是否交给 Agent。";
+    } else {
+      DOM.handoffHint.textContent = "先完成 3 分钟 Reset，再决定是否接管。";
+    }
   },
 
   start() {
@@ -100,6 +113,7 @@ const Timer = {
       if (this.secondsLeft === 120) DOM.timerHint.textContent = "压缩任务";
       if (this.secondsLeft === 60) DOM.timerHint.textContent = "准备交接";
       if (this.secondsLeft === 0) {
+        this.completed = true;
         this.stop();
         DOM.timerHint.textContent = "Reset 完成";
         Toast.show("3 分钟 Reset 完成");
@@ -116,6 +130,7 @@ const Timer = {
 
   reset() {
     this.stop();
+    this.completed = false;
     this.secondsLeft = this.totalSeconds;
     DOM.timerHint.textContent = "专注呼吸";
     this.render();
@@ -132,6 +147,11 @@ const Toast = {
 };
 
 function goToPage(page) {
+  if (page === 4 && !Timer.completed) {
+    Toast.show("先完成 3 分钟 Reset");
+    return;
+  }
+
   currentPage = Math.max(1, Math.min(4, page));
   maxVisitedPage = Math.max(maxVisitedPage, currentPage);
 
@@ -158,6 +178,9 @@ function updateStatus(extra = "") {
         ? "建议交给 Agent，别继续硬扛。"
         : `${mood.hint} · 硬扛 ${VALUE_LABELS[hardCarryScore]} · 清晰度 ${VALUE_LABELS[clarityScore]}`;
   renderStateSummary();
+  if (!Timer.completed) {
+    DOM.handoffHint.textContent = "先完成 3 分钟 Reset，再决定是否接管。";
+  }
 }
 
 function renderStateSummary() {
@@ -393,6 +416,14 @@ function togglePrompt() {
   DOM.togglePrompt.setAttribute("aria-expanded", String(!collapsed));
 }
 
+function requestHandoff() {
+  if (!Timer.completed) {
+    Toast.show("先完成 3 分钟 Reset");
+    return;
+  }
+  goToPage(4);
+}
+
 function restartFlow() {
   currentProtocol = null;
   selectedMood = null;
@@ -438,7 +469,8 @@ function bindEvents() {
   DOM.generateReset.addEventListener("click", generateReset);
   DOM.copyPrompt.addEventListener("click", copyPrompt);
   DOM.togglePrompt.addEventListener("click", togglePrompt);
-  DOM.handoffCta.addEventListener("click", () => goToPage(4));
+  DOM.handoffCta.addEventListener("click", requestHandoff);
+  DOM.openHandoff.addEventListener("click", requestHandoff);
   DOM.restartFlow.addEventListener("click", restartFlow);
   DOM.startTimer.addEventListener("click", Timer.start.bind(Timer));
   DOM.pauseTimer.addEventListener("click", Timer.stop.bind(Timer));
