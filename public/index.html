@@ -310,10 +310,7 @@
                   <h1>把重复和发散交给 Agent</h1>
                   <p>这不是逃避，是把低质量硬扛换成可验证的交接边界。</p>
                 </div>
-                <button class="ghost-button" id="copyPrompt" type="button">复制 Prompt</button>
               </div>
-
-              <pre class="handoff-code" id="handoffPrompt" tabindex="0">完成状态填写和卡点描述后，这里会生成可复制给 Codex / Cursor / Claude Code 的交接 Prompt。</pre>
 
               <div class="summary-grid">
                 <div>
@@ -329,6 +326,23 @@
                   <strong id="summarySaved">约 25 分钟</strong>
                 </div>
               </div>
+
+              <section class="handoff-ready">
+                <div class="shield-mark" aria-hidden="true">✓</div>
+                <div>
+                  <p class="section-kicker">PROMPT READY</p>
+                  <h2>交接 Prompt 已准备好</h2>
+                  <p>默认不展开全文，避免干扰。需要时可以复制给 Codex / Cursor / Claude Code，或展开检查细节。</p>
+                </div>
+                <div class="handoff-actions">
+                  <button class="primary-button" id="copyPrompt" type="button">复制 Prompt</button>
+                  <button class="ghost-button" id="togglePrompt" type="button" aria-expanded="false">
+                    展开 Prompt
+                  </button>
+                </div>
+              </section>
+
+              <pre class="handoff-code is-collapsed" id="handoffPrompt" tabindex="0">完成状态填写和卡点描述后，这里会生成可复制给 Codex / Cursor / Claude Code 的交接 Prompt。</pre>
 
               <div class="page-actions two">
                 <button class="ghost-button" type="button" data-back-page="3">返回 Reset</button>

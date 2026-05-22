@@ -29,6 +29,7 @@ const DOM = {
   handoffHint: $("#handoffHint"),
   handoffPrompt: $("#handoffPrompt"),
   copyPrompt: $("#copyPrompt"),
+  togglePrompt: $("#togglePrompt"),
   restartFlow: $("#restartFlow"),
   settingsButton: $("#settingsButton"),
   summaryMood: $("#summaryMood"),
@@ -276,6 +277,7 @@ function renderProtocol(protocol) {
   );
 
   DOM.handoffPrompt.textContent = formatPrompt(protocol);
+  collapsePrompt();
   DOM.summaryDecision.textContent = protocol.handoff ? "建议交接" : "最小行动";
   DOM.summarySaved.textContent = `约 ${protocol.savedMinutes || 25} 分钟`;
   updateStatus(`当前状态：${protocol.moodLabel || MOOD_CONFIG[selectedMood]?.status || "已填写"}`);
@@ -379,6 +381,18 @@ async function copyPrompt() {
   }
 }
 
+function collapsePrompt() {
+  DOM.handoffPrompt.classList.add("is-collapsed");
+  DOM.togglePrompt.textContent = "展开 Prompt";
+  DOM.togglePrompt.setAttribute("aria-expanded", "false");
+}
+
+function togglePrompt() {
+  const collapsed = DOM.handoffPrompt.classList.toggle("is-collapsed");
+  DOM.togglePrompt.textContent = collapsed ? "展开 Prompt" : "收起 Prompt";
+  DOM.togglePrompt.setAttribute("aria-expanded", String(!collapsed));
+}
+
 function restartFlow() {
   currentProtocol = null;
   selectedMood = null;
@@ -389,6 +403,7 @@ function restartFlow() {
   DOM.sourceBadge.textContent = "等待输入";
   DOM.decisionTitle.textContent = "先生成你的 Reset 协议";
   DOM.handoffPrompt.textContent = DEFAULT_PROMPT;
+  collapsePrompt();
   DOM.summaryDecision.textContent = "等待生成";
   DOM.summarySaved.textContent = "约 25 分钟";
   DOM.moodOptions.forEach((button) => {
@@ -422,6 +437,7 @@ function bindEvents() {
   DOM.saveState.addEventListener("click", saveState);
   DOM.generateReset.addEventListener("click", generateReset);
   DOM.copyPrompt.addEventListener("click", copyPrompt);
+  DOM.togglePrompt.addEventListener("click", togglePrompt);
   DOM.handoffCta.addEventListener("click", () => goToPage(4));
   DOM.restartFlow.addEventListener("click", restartFlow);
   DOM.startTimer.addEventListener("click", Timer.start.bind(Timer));
